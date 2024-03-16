@@ -135,7 +135,7 @@ class TestCase(case.Case):
         return trace_to_uuid(self.trace)
 
     def get_dirpath(self):
-        return os.path.join(common.MFC_TESTDIR, self.get_uuid())
+        return os.path.join(common.MFC_TEST_DIR, self.get_uuid())
 
     def get_filepath(self):
         return os.path.join(self.get_dirpath(), "case.py")

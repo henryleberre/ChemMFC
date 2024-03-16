@@ -15,6 +15,9 @@ module m_global_parameters
     use m_derived_types         ! Definitions of the derived types
 
     use m_helper_basic          ! Functions to compare floating point numbers
+
+    use m_thermochem            ! Thermodynamic and chemical properties
+
     ! ==========================================================================
 
     implicit none
@@ -83,6 +86,7 @@ module m_global_parameters
     integer :: sys_size              !< Number of unknowns in the system of equations
     integer :: weno_order            !< Order of accuracy for the WENO reconstruction
     logical :: hypoelasticity        !< activate hypoelasticity
+    logical :: chemistry             !< activate chemistry
 
     ! Annotations of the structure, i.e. the organization, of the state vectors
     type(int_bounds_info) :: cont_idx              !< Indexes of first & last continuity eqns.
@@ -97,6 +101,8 @@ module m_global_parameters
     integer :: pi_inf_idx                          !< Index of liquid stiffness func. eqn.
     type(int_bounds_info) :: stress_idx            !< Indexes of elastic shear stress eqns.
     integer :: c_idx                               !< Index of the color function
+    type(int_bounds_info) :: species_idx     !< Indexes of first & last concentration eqns.
+    type(int_bounds_info) :: temperature_idx       !< Indexes of first & last temperature eqns.
 
     type(int_bounds_info) :: bc_x, bc_y, bc_z !<
     !! Boundary conditions in the x-, y- and z-coordinate directions
@@ -217,6 +223,8 @@ module m_global_parameters
     integer :: intxb, intxe
     integer :: bubxb, bubxe
     integer :: strxb, strxe
+    integer :: chemxb, chemxe
+    integer :: tempxb, tempxe
     !> @}
 
     integer, allocatable, dimension(:, :, :) :: logic_grid
@@ -280,6 +288,7 @@ contains
         weno_order = dflt_int
 
         hypoelasticity = .false.
+        chemistry = .false.
 
         bc_x%beg = dflt_int; bc_x%end = dflt_int
         bc_y%beg = dflt_int; bc_y%end = dflt_int
@@ -349,6 +358,10 @@ contains
             patch_icpp(i)%m0 = dflt_real
 
             patch_icpp(i)%hcid = dflt_int
+
+            if (chemistry) then
+                patch_icpp(i)%Y(:) = 0d0
+            end if
         end do
 
         ! Tait EOS
@@ -671,6 +684,21 @@ contains
             end if
         end if
 
+        if (chemistry) then
+            species_idx%beg = sys_size + 1
+            species_idx%end = sys_size + num_species
+            sys_size = species_idx%end
+
+            temperature_idx%beg = sys_size + 1
+            temperature_idx%end = sys_size + 1
+            sys_size = temperature_idx%end
+        else
+            species_idx%beg = 1
+            species_idx%end = 1
+            temperature_idx%beg = 1
+            temperature_idx%end = 1
+        end if
+
         momxb = mom_idx%beg
         momxe = mom_idx%end
         advxb = adv_idx%beg
@@ -683,6 +711,10 @@ contains
         strxe = stress_idx%end
         intxb = internalEnergies_idx%beg
         intxe = internalEnergies_idx%end
+        chemxb = species_idx%beg
+        chemxe = species_idx%end
+        tempxb = temperature_idx%beg
+        tempxe = temperature_idx%end
 
         ! ==================================================================
 

@@ -18,6 +18,7 @@
 !!                  2) Harten-Lax-van Leer-Contact (HLLC)
 !!                  3) Exact
 
+#:include 'case.fpp'
 #:include 'macros.fpp'
 #:include 'inline_riemann.fpp'
 #:include 'inline_conversions.fpp'
@@ -36,6 +37,8 @@ module m_riemann_solvers
     use m_bubbles              !< To get the bubble wall pressure function
 
     use m_surface_tension      !< To get the capilary fluxes
+    
+    use m_chemistry
     ! ==========================================================================
 
     implicit none
@@ -736,6 +739,22 @@ contains
                                     flux_rs${XYZ}$_vf(j, k, l, contxe) = 0d0
                                 end if
                             end if
+
+                            #:if chemistry
+                                if (chem_params%advection) then
+                                    call s_compute_chemistry_adv_flux_hll( &
+                                        norm_dir, &
+                                        j, k, l, &
+                                        vel_L, vel_R, &
+                                        rho_L, rho_R, &
+                                        dir_idx, &
+                                        qL_prim_rs${XYZ}$_vf, &
+                                        qR_prim_rs${XYZ}$_vf, &
+                                        flux_rs${XYZ}$_vf, &
+                                        flux_src_rs${XYZ}$_vf, &
+                                        s_M, s_P)
+                                end if
+                            #:endif
                         end do
                     end do
                 end do

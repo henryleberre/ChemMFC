@@ -1,7 +1,7 @@
 import typing, itertools
 
 from mfc   import common
-from .case import define_case_d, CaseGeneratorStack, TestCaseBuilder
+from .case import define_case_d, define_case_f, CaseGeneratorStack, TestCaseBuilder
 
 def get_bc_mods(bc: int, dimInfo):
     params = {}
@@ -553,6 +553,17 @@ def list_cases() -> typing.List[TestCaseBuilder]:
             for _ in range(5):
                 stack.pop()
 
+    # pylint: disable=unused-variable
+    def alter_chemistry(dimInfo):
+        ndims = len(dimInfo[0])
+
+        cases.append(define_case_f(
+            f"{ndims}D -> Chemistry -> Binary Advection",
+            "examples/chemistry/nD_binary_adv/case.py", [ndims, 0.0001, 0.00011], 1, True))
+        cases.append(define_case_f(
+            f"{ndims}D -> Chemistry -> Binary Diffusion",
+            "examples/chemistry/nD_binary_dif/case.py", [ndims, 0.0001, 0.00011], 1, True))
+
     def foreach_dimension():
         for dimInfo, dimParams in get_dimensions():
             stack.push(f"{len(dimInfo[0])}D", dimParams)
@@ -573,6 +584,7 @@ def list_cases() -> typing.List[TestCaseBuilder]:
             alter_phasechange(dimInfo)
             alter_viscosity(dimInfo)
             alter_body_forces(dimInfo)
+            #alter_chemistry(dimInfo)
             stack.pop()
             stack.pop()
 

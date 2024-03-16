@@ -7,7 +7,7 @@
 import os
 %>\
 
-. "${MFC_ROOTDIR}/toolchain/util.sh"
+. "${MFC_ROOT_DIR}/toolchain/util.sh"
 
 TABLE_FORMAT_LINE="| * %-14s $MAGENTA%-35s$COLOR_RESET * %-14s $MAGENTA%-35s$COLOR_RESET |\\n"
 TABLE_HEADER="+-----------------------------------------------------------------------------------------------------------+ \\n"
@@ -83,7 +83,7 @@ unset CRAY_ACC_MODULE
 
 % if output_summary:
 
-cd "${MFC_ROOTDIR}"
+cd "${MFC_ROOT_DIR}"
 
 cat >>"${output_summary}" <<EOL
 ${target.name}: $(echo "$t_${target.name}_stop - $t_${target.name}_start" | bc -l)

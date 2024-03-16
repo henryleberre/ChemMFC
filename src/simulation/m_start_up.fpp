@@ -38,6 +38,8 @@ module m_start_up
 
     use m_rhs                  !< Right-hand-side (RHS) evaluation procedures
 
+    use m_chemistry            !< Chemistry module
+
     use m_data_output          !< Run-time info & solution data output procedures
 
     use m_time_steppers        !< Time-stepping algorithms
@@ -149,6 +151,7 @@ contains
             null_weights, precision, parallel_io, cyl_coord, &
             rhoref, pref, bubbles, bubble_model, &
             R0ref, &
+            chemistry, chem_params, &
 #:if not MFC_CASE_OPTIMIZATION
             nb, mapped_weno, wenoz, teno, weno_order, num_fluids, &
 #:endif
@@ -1060,7 +1063,7 @@ contains
                     end do
 
                     call s_compute_pressure(v_vf(E_idx)%sf(j, k, l), 0d0, &
-                                            dyn_pres, pi_inf, gamma, rho, qv, pres)
+                                            dyn_pres, pi_inf, gamma, rho, qv, v_vf(chemxb:chemxe), j,k,l, pres)
 
                     do i = 1, num_fluids
                         v_vf(i + internalEnergies_idx%beg - 1)%sf(j, k, l) = v_vf(i + adv_idx%beg - 1)%sf(j, k, l)* &
@@ -1118,6 +1121,11 @@ contains
             call s_strang_splitting(t_step, time_avg)
         end if
         if (relax) call s_infinite_relaxation_k(q_cons_ts(1)%vf)
+
+        if (chemistry) then
+            call s_chemistry_normalize_cons(q_cons_ts(1)%vf)
+        end if
+
         ! Time-stepping loop controls
         if ((mytime + dt) >= finaltime) dt = finaltime - mytime
         t_step = t_step + 1
@@ -1275,6 +1283,8 @@ contains
 
         if (hypoelasticity) call s_initialize_hypoelastic_module()
         if (relax) call s_initialize_phasechange_module()
+        if (chemistry) call s_initialize_chemistry_module()
+
         call s_initialize_data_output_module()
         call s_initialize_derived_variables_module()
         call s_initialize_time_steppers_module()
