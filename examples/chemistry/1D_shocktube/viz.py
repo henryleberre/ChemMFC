@@ -94,20 +94,20 @@ from case import sol
 
 case = Case(".")
 
-#for i, name in enumerate(sol.species_names):
-#    case.load_variable(name, f"prim.{5+i}")
+for i, name in enumerate(sol.species_names):
+    case.load_variable(name, f"prim.{5+i}")
 
 case.load_variable("rho", f"cons.1")
 
 for step in case.get_timesteps():
-    #for i, name in enumerate(sol.species_names):
-    #    case.plot(step, name)
-    #    print(i, name)
-
-    case.plot(step, "rho")
+    for i, name in enumerate(sol.species_names):
+        case.plot(step, name)
 
     plt.show()
     plt.cla()
 
-#case.define_variable("test", lambda x, t, df: x*x*x*x*x*x*x*x)
-#print(case._data[0].to_csv('test.csv', sep='\t'))
+    case.get_data()[step].to_csv(f"step-{step}.csv", sep='\t')
+
+case.define_variable("test", lambda x, t, df: x*x*x*x*x*x*x*x)
+
+print(case._data[0].to_csv('test.csv', sep='\t'))

@@ -5,6 +5,24 @@ import matplotlib.pyplot as plt
 
 casedir = pathlib.Path(__file__).parent.resolve()
 
+
+"""
+
+Major:
+OH (Hydroxyl radical): A highly reactive species that participates in many combustion reactions, often driving the chain branching reactions.
+H (Hydrogen atom): Another very reactive species involved in chain branching and propagation reactions.
+O (Oxygen atom): Participates in many elementary reactions, including those leading to the formation of other radicals.
+HO2 (Hydroperoxyl radical): Plays a role in both propagation and termination reactions.
+CH3 (Methyl radical): Commonly formed during the decomposition of larger hydrocarbons and is involved in propagation reactions.
+
+Minor:
+CH (Methylene radical): Less common but can participate in some propagation and branching reactions.
+C2H5 (Ethyl radical): Forms through specific pathways and participates in the growth of hydrocarbon chains.
+O2H (Dioxygenyl radical): Can be involved in specific secondary reactions but is not a major player in the combustion process.
+C2H3 (Vinyl radical): Involved in some secondary reactions, particularly in the combustion of unsaturated hydrocarbons.
+
+"""
+
 from case import sol as gas
 from case import Tend as end_time
 

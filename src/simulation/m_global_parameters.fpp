@@ -147,7 +147,7 @@ module m_global_parameters
     logical :: null_weights   !< Null undesired WENO weights
     logical :: mixture_err    !< Mixture properties correction
     logical :: hypoelasticity !< hypoelasticity modeling
-    logical :: chemistry      !< activate chemistry
+    logical, parameter :: chemistry = .${chemistry}$. !< Chemistry modeling
     logical :: cu_tensor
 
     logical :: bodyForces
@@ -524,7 +524,6 @@ contains
         palpha_eps = dflt_real
         ptgalpha_eps = dflt_real
         hypoelasticity = .false.
-        chemistry = .false.
         weno_flat = .true.
         riemann_flat = .true.
         rdma_mpi = .false.

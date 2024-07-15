@@ -9,28 +9,12 @@ import cantera as ct
 ctfile  = 'h2o2.yaml'
 sol     = ct.Solution(ctfile)
 
-case = 'custom'
-
-if case == 'custom':
-    sol.TPY = 1200, ct.one_atm, {'H2': 0.1, 'O2': 0.2, 'N2': 0.7}
-
-    dt=1e-8
-    Tend=1e-4
-else:
-    # The initial conditions are taken from [13]: the reactive mixture is composed
-    # of a 2/1/7 molar ratio of H2=O2=N2 at T ¼ 1000 K and P ¼ 1 atm.
-
-    sol.TPX = 1000, ct.one_atm, 'H2:2,O2:1,N2:7'
-
-    # The numerical simulation is conducted up to
-    # t ¼ 0:12 ms. The reference solution has been obtained with a fixed
-    # time step value Dt ¼ 1 ls
-
-    dt   = 1e-7
-    Tend = 0.12e-3
+sol.TPY = 1200, ct.one_atm, {'H2': 0.1, 'O2': 0.2, 'N2': 0.7}
+dt = 1e-8
+Tend = 1e-4
 
 NT=int(Tend/dt)
-SAVE_COUNT=1000
+SAVE_COUNT=60
 NS=NT//SAVE_COUNT
 Nx=25
 s=1e-2
@@ -74,7 +58,7 @@ case = {
 
     # Chemistry ================================================================
     'chemistry'                    : 'T',
-    'chem_params%advection'        : 'T',
+    'chem_params%advection'        : 'F',
     'chem_params%diffusion'        : 'F',
     'chem_params%reactions'        : 'T',
     # ==========================================================================

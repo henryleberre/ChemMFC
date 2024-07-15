@@ -743,6 +743,7 @@ contains
 
         integer :: i, c, j, k, l, q, ii, id !< Generic loop iterators
         integer :: term_index
+        integer :: ncells
 
         ! Configuring Coordinate Direction Indexes =========================
         ix%beg = -buff_size; iy%beg = 0; iz%beg = 0
@@ -764,6 +765,11 @@ contains
                     end do
                 end do
             end do
+        end do
+
+        !$acc parallel loop collapse(4) gang vector default(present)
+        do i = 1, sys_size
+            rhs_vf(i)%sf(:, :, :) = 0d0
         end do
 
         ! ==================================================================
@@ -1081,7 +1087,8 @@ contains
         end if
         call cpu_time(t_finish)
         if (t_step >= 4) then
-            time_avg = (abs(t_finish - t_start)/((ix%end - ix%beg)*(iy%end - iy%beg)*(iz%end - iz%beg)) + (t_step - 4)*time_avg)/(t_step - 3)
+            ncells   = max((ix%end - ix%beg), 1)*max((iy%end - iy%beg), 1)*max((iz%end - iz%beg), 1)
+            time_avg = (abs(t_finish - t_start)/ncells + (t_step - 4)*time_avg)/(t_step - 3)
         else
             time_avg = 0d0
         end if

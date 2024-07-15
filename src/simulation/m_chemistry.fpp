@@ -55,57 +55,13 @@ contains
 
     end subroutine s_finalize_chemistry_module
 
-    subroutine s_compute_chemistry_adv_flux_hll( &
-        norm_dir, &
-        is1, is2, is3, &
-        vel_L, vel_R, &
-        rho_L, rho_R, &
-        dir_idx, &
-        qL_prim_rs_vf, qR_prim_rs_vf, &
-        flux_rsx_vf, flux_src_rsx_vf, s_M, s_P)
+    subroutine s_compute_chemistry_rhs(rhs_vf, q_cons_qp, q_prim_qp)
 
-        !$acc routine seq
+        type(scalar_field), dimension(sys_size), intent(INOUT) :: rhs_vf, q_cons_qp, q_prim_qp
 
-        integer, intent(IN) :: norm_dir
-        integer, intent(IN) :: is1, is2, is3
-        integer, dimension(3), intent(in) :: dir_idx
-        real(kind(0d0)), dimension(num_dims), intent(in) :: vel_L, vel_R
-        real(kind(0d0)), intent(in) :: rho_L, rho_R
-        real(kind(0d0)), dimension(startx:, starty:, startz:, 1:), intent(in) :: qL_prim_rs_vf, qR_prim_rs_vf
-        real(kind(0d0)), allocatable, dimension(:, :, :, :), intent(inout) :: flux_rsx_vf, flux_src_rsx_vf
-        real(kind(0d0)), intent(in) :: s_M, s_P
+        
 
-        real(kind(0d0)) :: Y_L, Y_R
-        real(kind(0d0)) :: adv, dif
-
-        integer :: eqn
-
-        !$acc loop seq
-        do eqn = chemxb, chemxe
-            Y_L = qL_prim_rs_vf(is1,     is2, is3, eqn)
-            Y_R = qR_prim_rs_vf(is1 + 1, is2, is3, eqn)
-
-            ! Riemann Problem for the advective term
-            adv = (s_M*Y_R*rho_R*vel_R(dir_idx(norm_dir)) &
-                   - s_P*Y_L*rho_L*vel_L(dir_idx(norm_dir)) &
-                   + s_M*s_P*(Y_L*rho_L - Y_R*rho_R)) &
-                  /(s_M - s_P)
-
-            flux_rsx_vf(is1, is2, is3, eqn) = adv
-            flux_src_rsx_vf(is1, is2, is3, eqn) = 0d0
-
-            !Y_R = qR_prim_rs_vf(is1 + 1, is2, is3, eqn)
-            !Y_L = qL_prim_rs_vf(is1,     is2, is3, eqn)
-!
-            !adv = (s_M*Y_R*rho_R &
-            !    - s_P*Y_L*rho_L) &
-            !    /(s_M - s_P)
-!
-            !flux_src_rsx_vf(is1, is2, is3, eqn) = adv
-
-        end do
-
-    end subroutine s_compute_chemistry_adv_flux_hll
+    end subroutine s_compute_chemistry_rhs
 
     #:for NORM_DIR, XYZ in [(1, 'x'), (2, 'y'), (3, 'z')]
         subroutine s_compute_chemistry_rhs_${XYZ}$ (flux_n, rhs_vf, flux_src_vf, q_prim_vf)
@@ -129,8 +85,9 @@ contains
                         do eqn = chemxb, chemxe
 
                             ! \nabla \cdot (F)
-                            rhs_vf(eqn)%sf(x, y, z) = (flux_n(${NORM_DIR}$)%vf(eqn)%sf(x - mx, y - my, z - mz) - &
-                                                       flux_n(${NORM_DIR}$)%vf(eqn)%sf(x, y, z))/d${XYZ}$ (${XYZ}$)
+                            !rhs_vf(eqn)%sf(x, y, z) = rhs_vf(eqn)%sf(x, y, z) + &
+                            !    (flux_n(${NORM_DIR}$)%vf(eqn)%sf(x - mx, y - my, z - mz) - &
+                            !     flux_n(${NORM_DIR}$)%vf(eqn)%sf(x, y, z))/d${XYZ}$ (${XYZ}$)
 
                         end do
 

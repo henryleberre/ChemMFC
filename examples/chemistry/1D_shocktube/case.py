@@ -80,7 +80,7 @@ case = {
 
     # Formatted Database Files Structure Parameters ============================
     'format'                       : 1,
-    'precision'                   : 2,
+    'precision'                    : 2,
     'prim_vars_wrt'                : 'T',
     # ==========================================================================
 

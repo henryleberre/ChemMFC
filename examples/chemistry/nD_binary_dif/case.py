@@ -10,9 +10,9 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument("dict", type=str,   metavar="DICT", help=argparse.SUPPRESS)
-parser.add_argument("ndim", type=int,   metavar="NDIM", default=1)
-parser.add_argument("ts",   type=float, metavar="TS", default=0.0001)
-parser.add_argument("te",   type=float, metavar="TE", default=0.13)
+parser.add_argument("--ndim", type=int,   metavar="NDIM", default=1)
+parser.add_argument("--ts",   type=float, metavar="TS", default=0.001)
+parser.add_argument("--te",   type=float, metavar="TE", default=0.010)
 
 ARGS = vars(parser.parse_args())
 ndim = ARGS['ndim']
@@ -26,7 +26,7 @@ s=10*(2*D*te)**0.5
 # Have at least 100 cells across the mixing layer.
 N=100*int(s/((2*D*ts)**0.5))
 v=0
-dt=1e-8
+dt=1e-9
 NT=int((te-ts)/dt)
 
 r = '((x**2d0'
@@ -98,7 +98,7 @@ case = {
 
     # Chemistry ================================================================
     'chemistry'                    : 'T',
-    'chem_params%advection'        : 'T',
+    'chem_params%advection'        : 'F',
     'chem_params%diffusion'        : 'T',
     'chem_params%reactions'        : 'F',
     # ==========================================================================
@@ -132,7 +132,7 @@ case = {
     # ==========================================================================
 
     # Chemistry ================================================
-    'cantera_file'                 : '../2spec.yaml',
+    'cantera_file'                 : 'h2o2.yaml',
     # ==========================================================
 }
 

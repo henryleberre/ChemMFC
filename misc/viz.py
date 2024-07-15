@@ -54,14 +54,16 @@ PLOTS = {
     'Density':  [('$\\rho$',               'prim.1', '#FF0000')],
                  #('$\\rho (ref.)',            a_ref2, '#FFFFFF')],
                  #('$\\rho (ref.)',            a_ref, '#FFFFFF')],
-    'Species':  [('$Y_\text{H2}$',  'prim.5', '#FFFFFF'),
-                 ('$Y_\text{O2}$',  'prim.8', '#FFFF00'),
-                 ('$Y_\text{H2O}$', 'prim.10', '#00FF00'),
-                 ('$Y_\text{N2}$',  'prim.14', '#FF00FF')],
-    'rhoYks':  [('$\\rho Y_\text{H2}$',  'cons.5', '#FFFFFF'),
-                 ('$\\rho Y_\text{O2}$',  'cons.8', '#FFFF00'),
-                 ('$\\rho Y_\text{H2O}$', 'cons.10', '#00FF00'),
-                 ('$\\rho Y_\text{N2}$',  'cons.14', '#FF00FF')],
+    'Momentum density': [('$\\rho u_x$',                 'cons.2', '#00FF00')],
+    'Alpha': [('$\\alpha$',                 'prim.4', '#00FF00')],
+    'Species':  [('$Y_\\text{H2}$',  'prim.5', '#FFFFFF'),
+                 ('$Y_\\text{O2}$',  'prim.8', '#FFFF00'),
+                 ('$Y_\\text{H2O}$', 'prim.10', '#00FF00'),
+                 ('$Y_\\text{N2}$',  'prim.14', '#FF00FF')],
+    'rhoYks':  [('$\\rho Y_\\text{H2}$',  'cons.5', '#FFFFFF'),
+                 ('$\\rho Y_\\text{O2}$',  'cons.8', '#FFFF00'),
+                 ('$\\rho Y_\\text{H2O}$', 'cons.10', '#00FF00'),
+                 ('$\\rho Y_\\text{N2}$',  'cons.14', '#FF00FF')],
     'Temperature': [('$T$', 'prim.15', '#00FF00')],
     'Energy': [('$E$', 'cons.3', '#00FF00')],
                 # ('$Y_\\text{H}$ (ref.)',    y2_ref, '#0000FF')],
@@ -99,7 +101,7 @@ ARGS        = vars(parser.parse_args())
 DIRPATH     = os.path.abspath(ARGS['case_dir'])
 OUTDIR      = os.path.join(DIRPATH, 'viz')
 CASENAME    = os.path.basename(DIRPATH)
-DESCRIPTION = "$\\frac{\\partial}{\\partial x} \\left(\\rho Y_k\\right) + \\nabla \\cdot \\left(\\rho Y_k \\vec{u}\\right) - D \\nabla \\cdot \\left(\\rho \\nabla Y_k\\right) = 0$"
+DESCRIPTION = "0D React - Chemistry = T, Advection = T, Diffusion = F, Reactions = T"
 
 TARGET_ASPECT_RATIO = 16 / 9
 
@@ -121,7 +123,7 @@ def calculate_layout(n):
     return rows, columns
 
 rows, cols = calculate_layout(len(PLOTS.keys()))
-rows, cols = 2, 4
+rows, cols = 3, 3
 
 
 DATA = {}
@@ -274,7 +276,7 @@ for var in list(MFC_VARS) + ['x']:
 def _worker(t_steps: list):
     for i, t_step in enumerate(t_steps):
         print(f"\nProcessing frame {t_step}...")
-        _, axes = plt.subplots(rows, cols, figsize=PLOT_DIMS)
+        _, axes = plt.subplots(rows, cols, figsize=(13,13))
 
         for i, name in enumerate(PLOTS.keys()):
             plot(name, t_step, axes[i % rows, i // rows])

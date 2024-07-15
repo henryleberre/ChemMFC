@@ -950,6 +950,7 @@ contains
                         rho_K = 0d0
                         !$acc loop seq
                         do i = chemxb, chemxe
+                            !print*, j,k,l, qK_cons_vf(i)%sf(j, k, l)
                             rho_K = rho_K + max(0d0, qK_cons_vf(i)%sf(j, k, l))
                         end do
 
@@ -957,6 +958,9 @@ contains
                         do i = 1, contxe
                             qK_prim_vf(i)%sf(j, k, l) = rho_K
                         end do
+                        !print*, rho_K
+
+                        !rho_K = max(rho_K, 1d-16)
 
                         Yksum = 0d0
                         !$acc loop seq
@@ -965,6 +969,8 @@ contains
                             Yksum = Yksum + qK_prim_vf(i)%sf(j, k, l)
                         end do
 
+
+                        !Yksum = max(Yksum, 1d-16)
                         !$acc loop seq
                         do i = chemxb, chemxe
                             qK_prim_vf(i)%sf(j, k, l) = qK_prim_vf(i)%sf(j, k, l)/Yksum
@@ -977,6 +983,11 @@ contains
                             qK_prim_vf(i)%sf(j, k, l) = qK_cons_vf(i)%sf(j, k, l)
                         end do
                     end if
+
+                    !$acc loop seq
+                    !do i = 1, contxe
+                    !    qK_prim_vf(i)%sf(j, k, l) = qK_cons_vf(i)%sf(j, k, l)
+                    !end do
 
 #ifdef MFC_SIMULATION
                     rho_K = max(rho_K, sgm_eps)

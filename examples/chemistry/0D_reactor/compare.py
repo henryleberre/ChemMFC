@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import cantera as ct
 import numpy as np
 
+
 # Constants
 
 from case import dt, Tend, SAVE_COUNT, sol
@@ -58,19 +59,39 @@ for timestep in timesteps:
 # Transpose DATA to separate each variable's data
 MFC_DATA = list(map(list, zip(*DATA)))
 
+"""
+
+Major:
+OH (Hydroxyl radical): A highly reactive species that participates in many combustion reactions, often driving the chain branching reactions.
+H (Hydrogen atom): Another very reactive species involved in chain branching and propagation reactions.
+O (Oxygen atom): Participates in many elementary reactions, including those leading to the formation of other radicals.
+HO2 (Hydroperoxyl radical): Plays a role in both propagation and termination reactions.
+CH3 (Methyl radical): Commonly formed during the decomposition of larger hydrocarbons and is involved in propagation reactions.
+
+Minor:
+CH (Methylene radical): Less common but can participate in some propagation and branching reactions.
+C2H5 (Ethyl radical): Forms through specific pathways and participates in the growth of hydrocarbon chains.
+O2H (Dioxygenyl radical): Can be involved in specific secondary reactions but is not a major player in the combustion process.
+C2H3 (Vinyl radical): Involved in some secondary reactions, particularly in the combustion of unsaturated hydrocarbons.
+
+"""
+
 # Legends dictionary
 legends = {
     5: 'H_2',
-    6: 'H',
-    7: 'O',
+    6: 'H',     # Major
+    7: 'O',     # Major
     8: 'O_2',
-    9: 'OH',
-    10: 'H_2O',
-    11: 'HO_2',
-    12: 'H_2O_2',
-    13: 'AR',
-    #14: 'N2',
+    9: 'OH',    # Major
+    10: 'H_2O',  # Minor
+    11: 'HO_2',  # Major
+    12: 'H_2O_2', # Minor
+    13: 'AR',     # Minor
+    14: 'N2',     # Minor
 }
+
+majors = [6, 7, 9, 11]
+minors = [10, 12, 13, 14]
 
 # Create a reactor and add the gas mixture to it
 reactor = ct.IdealGasReactor(sol)
@@ -110,22 +131,44 @@ pressure.append(reactor.thermo.P)
 temperature_history.append(reactor.T)
 energys.append(reactor.thermo.int_energy_mass)
 
+# Y - Majors
 # Plot each variable over time
 for i, var in enumerate(range(5, 14 + 1)):
-    if var in legends:
+    if var in legends and var in majors:
         plt.plot(times, MFC_DATA[i], label=f"${{{legends[var]}}}$")
 
 # Now plot cantera results in dotted lines, use same colors and dashed lines.
 for i, var in enumerate(range(5, 14 + 1)):
-    if var in legends:
-        plt.plot(time_history, [y[var-5] for y in Ys], linestyle='dashed', color=plt.gca().lines[i+1].get_color())
+    if var in legends and var in majors:
+        plt.plot(time_history, [y[var-5] for y in Ys], linestyle='dashed', color=plt.gca().lines[majors.index(var)+1].get_color())
 
-# Y
 plt.xlabel("Time (s)")
 plt.ylabel("Mass Fractions")
+#plt.xscale("log")
+plt.yscale("log")
 plt.legend()
-plt.title("Mass Fractions (MFC v. Cantera)")
-plt.savefig(f"{casedir}/compare_Y.png", dpi=700)
+plt.title("Major Radicals (MFC v. Cantera)")
+plt.savefig(f"{casedir}/compare_major_Y.png", dpi=700)
+plt.close()
+
+# Y - Minor
+# Plot each variable over time
+for i, var in enumerate(range(5, 14 + 1)):
+    if var in legends and var in minors:
+        plt.plot(times, MFC_DATA[i], label=f"${{{legends[var]}}}$")
+
+# Now plot cantera results in dotted lines, use same colors and dashed lines.
+for i, var in enumerate(range(5, 14 + 1)):
+    if var in legends and var in minors:
+        plt.plot(time_history, [y[var-5] for y in Ys], linestyle='dashed', color=plt.gca().lines[minors.index(var)+1].get_color())
+
+plt.xlabel("Time (s)")
+plt.ylabel("Mass Fractions")
+#plt.xscale("log")
+plt.yscale("log")
+plt.legend()
+plt.title("Minor Radicals (MFC v. Cantera)")
+plt.savefig(f"{casedir}/compare_minors_Y.png", dpi=700)
 plt.close()
 
 pressure_data = []

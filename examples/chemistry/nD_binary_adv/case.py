@@ -94,7 +94,7 @@ case = {
     # Chemistry ================================================================
     'chemistry'                    : 'T',
     'chem_params%advection'        : 'T',
-    'chem_params%diffusion'        : 'T',
+    'chem_params%diffusion'        : 'F',
     'chem_params%reactions'        : 'F',
     # ==========================================================================
 

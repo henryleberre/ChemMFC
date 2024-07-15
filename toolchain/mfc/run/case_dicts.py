@@ -329,7 +329,7 @@ for fl_id in range(1,10+1):
                       "cv", "qv", "qvp" ]:
         POST_PROCESS[f"fluid_pp({fl_id})%{real_attr}"] = ParamType.REAL
 
-IGNORE = ["cantera_file"]
+IGNORE = ["cantera_file", "chemistry"]
 
 ALL = COMMON.copy()
 ALL.update(PRE_PROCESS)

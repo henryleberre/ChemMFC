@@ -2,6 +2,8 @@
 !! @file m_global_parameters.f90
 !! @brief Contains module m_global_parameters
 
+#:include 'case.fpp'
+
 !> @brief This module contains all of the parameters characterizing the
 !!      computational domain, simulation algorithm, stiffened equation of
 !!      state and finally, the formatted database file(s) structure.
@@ -98,7 +100,7 @@ module m_global_parameters
     logical :: mixture_err     !< Mixture error limiter
     logical :: alt_soundspeed  !< Alternate sound speed
     logical :: hypoelasticity  !< Turn hypoelasticity on
-    logical :: chemistry       !< activate chemistry
+    logical, parameter :: chemistry = .${chemistry}$. !< Chemistry modeling
     !> @}
 
     !> @name Annotations of the structure, i.e. the organization, of the state vectors
@@ -297,7 +299,6 @@ contains
         relax = .false.
         relax_model = dflt_int
         hypoelasticity = .false.
-        chemistry = .false.
 
         bc_x%beg = dflt_int; bc_x%end = dflt_int
         bc_y%beg = dflt_int; bc_y%end = dflt_int
