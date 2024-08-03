@@ -6,19 +6,33 @@
 import json
 import cantera as ct
 
-ctfile  = 'gri30.yaml'
+ctfile  = 'h2o2.yaml'
 sol     = ct.Solution(ctfile)
+sol.TPX = 1000, ct.one_atm, 'H2:2,O2:1,AR:7'
 
-sol.TPX = 1300, ct.one_atm, {'H2': 0.43, 'O2': 1.6*0.43, 'AR': 1 - 0.43 - 1.6*0.43}
+sol_l = ct.Solution(ctfile)
+sol_l.DPX = 0.2, 7173, 'H2:2,O2:1,AR:7'
+sol_r = ct.Solution(ctfile)
+sol_r.DPX = 0.2, 7173, 'H2:2,O2:1,AR:7'
 
-dt = 1e-9
-Tend = 5e-6
+rho_l = sol_l.density
+u_l   = 0
+p_l   = sol_l.P
 
-NT=int(Tend/dt)
-SAVE_COUNT=60
+rho_r = sol_r.density
+u_r   = -487.34
+p_r   = sol_r.P
+L  = 0.12
+Nx = 400
+dx = L/Nx
+dt = dx/abs(u_r)*0.1
+Tend=230e-6
+
+NT=int(Tend/dt)//100
+SAVE_COUNT=200//10
 NS=NT//SAVE_COUNT
-Nx=25
-s=1e-2
+
+chemistry = False
 
 case = {
     # Logistics ================================================================
@@ -26,23 +40,23 @@ case = {
     # ==========================================================================
 
     # Computational Domain Parameters ==========================================
-    'x_domain%beg'                 : -s/2,
-    'x_domain%end'                 : +s/2,
+    'x_domain%beg'                 : -L/2,
+    'x_domain%end'                 : +L/2,
     'm'                            : Nx,
     'n'                            : 0,
     'p'                            : 0,
     'dt'                           : float(dt),
     't_step_start'                 : 0,
     't_step_stop'                  : NT,
-    't_step_save'                  : NS,
-    't_step_print'                 : NS,
+    't_step_save'                  : NS, # 1592
+    't_step_print'                 : NS, # 1592
     'parallel_io'                  : 'F',
 
     # Simulation Algorithm Parameters ==========================================
     'model_eqns'                   : 2,
     'num_fluids'                   : 1,
-    'num_patches'                  : 1,
-    'adv_alphan'                   : 'F',
+    'num_patches'                  : 2,
+    'adv_alphan'                   : 'T',
     'mpp_lim'                      : 'F',
     'mixture_err'                  : 'F',
     'time_stepper'                 : 3,
@@ -54,14 +68,14 @@ case = {
     'riemann_solver'               : 1,
     'wave_speeds'                  : 1,
     'avg_state'                    : 2,
-    'bc_x%beg'                     :-1,
-    'bc_x%end'                     :-1,
+    'bc_x%beg'                     :-8, # -2
+    'bc_x%end'                     :-8,
 
     # Chemistry ================================================================
-    'chemistry'                    : 'T',
-    'chem_params%advection'        : 'F',
-    'chem_params%diffusion'        : 'F',
-    'chem_params%reactions'        : 'T',
+    # 'chemistry'                    : 'F' if not chemistry else 'T',
+    # 'chem_params%advection'        : 'T',
+    # 'chem_params%diffusion'        : 'F',
+    # 'chem_params%reactions'        : 'F',
     # ==========================================================================
 
     # Formatted Database Files Structure Parameters ============================
@@ -70,13 +84,24 @@ case = {
     'prim_vars_wrt'                : 'T',
     # ==========================================================================
 
+    # ==========================================================================
     'patch_icpp(1)%geometry'       : 1,
-    'patch_icpp(1)%x_centroid'     : 0,
-    'patch_icpp(1)%length_x'       : s,
-    'patch_icpp(1)%vel(1)'         : 0,
-    'patch_icpp(1)%pres'           : sol.P,
+    'patch_icpp(1)%x_centroid'     : -L/4,
+    'patch_icpp(1)%length_x'       : L/2,
+    'patch_icpp(1)%vel(1)'         : u_l, #f'{u_l} + {u_r-u_l}/2d0 + ({u_r-u_l}/2d0)*(1+tanh(x/0.005))',
+    'patch_icpp(1)%pres'           : p_l, #f'{p_l} + {p_r-p_l}/2d0 + ({p_r-p_l}/2d0)*(1+tanh(x/0.005))',
     'patch_icpp(1)%alpha(1)'       : 1,
-    'patch_icpp(1)%alpha_rho(1)'   : sol.density,
+    'patch_icpp(1)%alpha_rho(1)'   : rho_l, #f'{rho_l} + {rho_r-rho_l}/2d0 + ({rho_r-rho_l}/2d0)*(1+tanh(x/0.005))',
+    # ==========================================================================
+
+    # ==========================================================================
+    'patch_icpp(2)%geometry'       : 1,
+    'patch_icpp(2)%x_centroid'     : L/4,
+    'patch_icpp(2)%length_x'       : L/2,
+    'patch_icpp(2)%vel(1)'         : u_r, #f'{u_l} + {u_r-u_l}/2d0 + ({u_r-u_l}/2d0)*(1+tanh(x/0.005))',
+    'patch_icpp(2)%pres'           : p_r, #f'{p_l} + {p_r-p_l}/2d0 + ({p_r-p_l}/2d0)*(1+tanh(x/0.005))',
+    'patch_icpp(2)%alpha(1)'       : 1,
+    'patch_icpp(2)%alpha_rho(1)'   : rho_r, #f'{rho_l} + {rho_r-rho_l}/2d0 + ({rho_r-rho_l}/2d0)*(1+tanh(x/0.005))',
     # ==========================================================================
 
     # Fluids Physical Parameters ===============================================
@@ -85,12 +110,13 @@ case = {
     # ==========================================================================
 
     # Chemistry ================================================
-    'cantera_file'                 : ctfile,
     # ==========================================================
 }
 
-for i in range(len(sol.Y)):
-    case[f'patch_icpp(1)%Y({i+1})'] = sol.Y[i]
+if chemistry:
+    for i in range(len(sol.Y)):
+        case[f'patch_icpp(1)%Y({i+1})'] = sol_l.Y[i]
+        case[f'patch_icpp(2)%Y({i+1})'] = sol_r.Y[i]
 
 if __name__ == '__main__':
     print(json.dumps(case))

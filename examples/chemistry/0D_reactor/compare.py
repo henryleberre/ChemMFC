@@ -1,4 +1,5 @@
 import glob
+import math
 import pathlib
 import matplotlib.pyplot as plt
 
@@ -12,6 +13,11 @@ from case import dt, Tend, SAVE_COUNT, sol
 
 BG_COLOR = '#1a1a1a'
 TX_COLOR = '#FFFFFF'
+
+ign = 10**(-10.647+3966/(1300) - math.log10(1.6*0.43))
+
+# print with 10 decimal places
+print(f"ignition delay: {ign:.10f}")
 
 import seaborn as sns
 
@@ -59,23 +65,6 @@ for timestep in timesteps:
 # Transpose DATA to separate each variable's data
 MFC_DATA = list(map(list, zip(*DATA)))
 
-"""
-
-Major:
-OH (Hydroxyl radical): A highly reactive species that participates in many combustion reactions, often driving the chain branching reactions.
-H (Hydrogen atom): Another very reactive species involved in chain branching and propagation reactions.
-O (Oxygen atom): Participates in many elementary reactions, including those leading to the formation of other radicals.
-HO2 (Hydroperoxyl radical): Plays a role in both propagation and termination reactions.
-CH3 (Methyl radical): Commonly formed during the decomposition of larger hydrocarbons and is involved in propagation reactions.
-
-Minor:
-CH (Methylene radical): Less common but can participate in some propagation and branching reactions.
-C2H5 (Ethyl radical): Forms through specific pathways and participates in the growth of hydrocarbon chains.
-O2H (Dioxygenyl radical): Can be involved in specific secondary reactions but is not a major player in the combustion process.
-C2H3 (Vinyl radical): Involved in some secondary reactions, particularly in the combustion of unsaturated hydrocarbons.
-
-"""
-
 # Legends dictionary
 legends = {
     5: 'H_2',
@@ -86,8 +75,8 @@ legends = {
     10: 'H_2O',  # Minor
     11: 'HO_2',  # Major
     12: 'H_2O_2', # Minor
-    13: 'AR',     # Minor
-    14: 'N2',     # Minor
+    53: 'AR',     # Minor
+    #14: 'N2',     # Minor
 }
 
 majors = [6, 7, 9, 11]
@@ -133,12 +122,12 @@ energys.append(reactor.thermo.int_energy_mass)
 
 # Y - Majors
 # Plot each variable over time
-for i, var in enumerate(range(5, 14 + 1)):
+for i, var in enumerate(legends.keys()):
     if var in legends and var in majors:
         plt.plot(times, MFC_DATA[i], label=f"${{{legends[var]}}}$")
 
 # Now plot cantera results in dotted lines, use same colors and dashed lines.
-for i, var in enumerate(range(5, 14 + 1)):
+for i, var in enumerate(legends.keys()):
     if var in legends and var in majors:
         plt.plot(time_history, [y[var-5] for y in Ys], linestyle='dashed', color=plt.gca().lines[majors.index(var)+1].get_color())
 
@@ -153,14 +142,17 @@ plt.close()
 
 # Y - Minor
 # Plot each variable over time
-for i, var in enumerate(range(5, 14 + 1)):
+for i, var in enumerate(legends.keys()):
     if var in legends and var in minors:
         plt.plot(times, MFC_DATA[i], label=f"${{{legends[var]}}}$")
 
 # Now plot cantera results in dotted lines, use same colors and dashed lines.
-for i, var in enumerate(range(5, 14 + 1)):
+for i, var in enumerate(legends.keys()):
     if var in legends and var in minors:
         plt.plot(time_history, [y[var-5] for y in Ys], linestyle='dashed', color=plt.gca().lines[minors.index(var)+1].get_color())
+
+# show line at y=10^-6
+plt.axhline(y=10**-6, color='r', linestyle='--')
 
 plt.xlabel("Time (s)")
 plt.ylabel("Mass Fractions")
@@ -208,7 +200,7 @@ temperatures = []
 
 # Read pressure data for each timestep
 for timestep in timesteps:
-    filepath = f"{casedir}/D/cons.{15}.00.{timestep:06d}.dat"
+    filepath = f"{casedir}/D/cons.{58}.00.{timestep:06d}.dat"
     with open(filepath) as f:
         temperatures.append(float(f.readline().split()[1]))
 
