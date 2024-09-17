@@ -112,7 +112,7 @@ contains
 
         #:if chemistry
 
-            !$acc parallel loop collapse(4) private(rho)
+            !$acc parallel loop collapse(3) private(rho)
             do x = 0, m
                 do y = 0, n
                     do z = 0, p
