@@ -24,7 +24,7 @@ sol     = ct.Solution(ctfile)
 
 sol.TPX = 1300, ct.one_atm, {'H2': 0.43, 'O2': 1.6*0.43, 'AR': 1 - 0.43 - 1.6*0.43}
 
-Nx   = 20*args.scale
+Nx   = 25*args.scale
 Tend = 1e-6
 s    = 1e-2
 dt   = 1e-9
@@ -45,14 +45,14 @@ case = {
     'z_domain%beg'                 : -s/2,
     'z_domain%end'                 : +s/2,
     'm'                            : Nx,
-    'n'                            : Nx,
-    'p'                            : Nx,
+    'n'                            : Nx if args.ndim > 1 else 0,
+    'p'                            : Nx if args.ndim > 2 else 0,
     'dt'                           : float(dt),
     't_step_start'                 : 0,
     't_step_stop'                  : NT,
     't_step_save'                  : NS,
     't_step_print'                 : NS,
-    'parallel_io'                  : 'T' if ndim > 1 else 'F',
+    'parallel_io'                  : 'T' if args.ndim > 1 else 'F',
 
     # Simulation Algorithm Parameters ==========================================
     'model_eqns'                   : 2,
@@ -82,7 +82,7 @@ case = {
     'prim_vars_wrt'                : 'T',
     # ==========================================================================
 
-    'patch_icpp(1)%geometry'       : 9,
+    'patch_icpp(1)%geometry'       : 3**(args.ndim - 1),
     'patch_icpp(1)%x_centroid'     : 0,
     'patch_icpp(1)%y_centroid'     : 0,
     'patch_icpp(1)%z_centroid'     : 0,
@@ -111,7 +111,7 @@ if args.chem:
     # Chemistry ================================================================
     case.update({
         'chemistry'             : 'T',
-        'chem_params%advection' : 'F',
+        'chem_params%advection' : 'T',
         'chem_params%diffusion' : 'F',
         'chem_params%reactions' : 'T',
     })

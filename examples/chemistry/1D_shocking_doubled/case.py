@@ -25,7 +25,7 @@ p_l   = sol.P
 rho_r = sol.density
 u_r   = -487.34
 p_r   = sol.P
-L  = 0.12
+L  = 0.12*2
 Nx = 1000
 dx = L/Nx
 dt = dx/abs(u_r)*0.01
@@ -58,7 +58,7 @@ case = {
     # Simulation Algorithm Parameters ==========================================
     'model_eqns'                   : 2,
     'num_fluids'                   : 1,
-    'num_patches'                  : 2,
+    'num_patches'                  : 3,
     'mpp_lim'                      : 'F',
     'mixture_err'                  : 'F',
     'time_stepper'                 : 3,
@@ -70,7 +70,7 @@ case = {
     'riemann_solver'               : 1,
     'wave_speeds'                  : 1,
     'avg_state'                    : 2,
-    'bc_x%beg'                     :-2,
+    'bc_x%beg'                     :-3, # -2
     'bc_x%end'                     :-3,
 
     # Chemistry ================================================================
@@ -89,8 +89,8 @@ case = {
 
     # ==========================================================================
     'patch_icpp(1)%geometry'       : 1,
-    'patch_icpp(1)%x_centroid'     : -L/4,
-    'patch_icpp(1)%length_x'       : L/2,
+    'patch_icpp(1)%x_centroid'     : 0,
+    'patch_icpp(1)%length_x'       : L,
     'patch_icpp(1)%vel(1)'         : u_l, #f'{u_l} + {u_r-u_l}/2d0 + ({u_r-u_l}/2d0)*(1+tanh(x/0.005))',
     'patch_icpp(1)%pres'           : p_l, #f'{p_l} + {p_r-p_l}/2d0 + ({p_r-p_l}/2d0)*(1+tanh(x/0.005))',
     'patch_icpp(1)%alpha(1)'       : 1,
@@ -99,12 +99,24 @@ case = {
 
     # ==========================================================================
     'patch_icpp(2)%geometry'       : 1,
-    'patch_icpp(2)%x_centroid'     : L/4,
-    'patch_icpp(2)%length_x'       : L/2,
-    'patch_icpp(2)%vel(1)'         : u_r, #f'{u_l} + {u_r-u_l}/2d0 + ({u_r-u_l}/2d0)*(1+tanh(x/0.005))',
-    'patch_icpp(2)%pres'           : p_r, #f'{p_l} + {p_r-p_l}/2d0 + ({p_r-p_l}/2d0)*(1+tanh(x/0.005))',
+    'patch_icpp(2)%x_centroid'     : -L/4,
+    'patch_icpp(2)%length_x'       :  L/8,
+    'patch_icpp(2)%vel(1)'         : -u_r, #f'{u_l} + {u_r-u_l}/2d0 + ({u_r-u_l}/2d0)*(1+tanh(x/0.005))',
+    'patch_icpp(2)%pres'           : p_l, #f'{p_l} + {p_r-p_l}/2d0 + ({p_r-p_l}/2d0)*(1+tanh(x/0.005))',
     'patch_icpp(2)%alpha(1)'       : 1,
-    'patch_icpp(2)%alpha_rho(1)'   : rho_r, #f'{rho_l} + {rho_r-rho_l}/2d0 + ({rho_r-rho_l}/2d0)*(1+tanh(x/0.005))',
+    'patch_icpp(2)%alter_patch(1)' : 'T',
+    'patch_icpp(2)%alpha_rho(1)'   : rho_l, #f'{rho_l} + {rho_r-rho_l}/2d0 + ({rho_r-rho_l}/2d0)*(1+tanh(x/0.005))',
+    # ==========================================================================
+
+    # ==========================================================================
+    'patch_icpp(3)%geometry'       : 1,
+    'patch_icpp(3)%x_centroid'     : L/4,
+    'patch_icpp(3)%length_x'       : L/8,
+    'patch_icpp(3)%vel(1)'         : u_r, #f'{u_l} + {u_r-u_l}/2d0 + ({u_r-u_l}/2d0)*(1+tanh(x/0.005))',
+    'patch_icpp(3)%pres'           : p_l, #f'{p_l} + {p_r-p_l}/2d0 + ({p_r-p_l}/2d0)*(1+tanh(x/0.005))',
+    'patch_icpp(3)%alter_patch(1)' : 'T',
+    'patch_icpp(3)%alpha(1)'       : 1,
+    'patch_icpp(3)%alpha_rho(1)'   : rho_l, #f'{rho_l} + {rho_r-rho_l}/2d0 + ({rho_r-rho_l}/2d0)*(1+tanh(x/0.005))',
     # ==========================================================================
 
     # Fluids Physical Parameters ===============================================
@@ -120,6 +132,7 @@ if chemistry:
     for i in range(len(sol.Y)):
         case[f'patch_icpp(1)%Y({i+1})'] = sol.Y[i]
         case[f'patch_icpp(2)%Y({i+1})'] = sol.Y[i]
+        case[f'patch_icpp(3)%Y({i+1})'] = sol.Y[i]
 
 if __name__ == '__main__':
     print(json.dumps(case))

@@ -68,7 +68,7 @@ case = {
     'wave_speeds'                  : 1,
     'avg_state'                    : 2,
     'bc_x%beg'                     :-2,
-    'bc_x%end'                     :-8,
+    'bc_x%end'                     :-3,
 
     # Chemistry ================================================================
     'chemistry'                    : 'F' if not chemistry else 'T',

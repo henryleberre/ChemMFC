@@ -306,6 +306,7 @@ contains
         real(kind(0d0)) :: H_L, H_R
         real(kind(0d0)), dimension(num_fluids) :: alpha_L, alpha_R
         real(kind(0d0)), dimension(num_species) :: Ys_L,Ys_R
+        real(kind(0d0)) :: T_L, T_R
         real(kind(0d0)) :: Y_L, Y_R
         real(kind(0d0)) :: gamma_L, gamma_R
         real(kind(0d0)) :: pi_inf_L, pi_inf_R
@@ -472,17 +473,21 @@ contains
 
                                if (chemistry .and. chem_params%advection) then 
                                    do i = chemxb, chemxe
-                                     Ys_L(i - chemxb + 1) = q_prim_vf(i)%sf(j, k, l)
-                                     Ys_R(i - chemxb + 1) = q_prim_vf(i)%sf(j+1, k, l)
+                                     Ys_L(i - chemxb + 1) = qL_prim_rs${XYZ}$_vf(j, k, l, i)
+                                     Ys_R(i - chemxb + 1) = qR_prim_rs${XYZ}$_vf(j+1, k, l, i)
                                    end do
-                                    call get_mixture_energy_mass( q_prim_vf(tempxb)%sf(j, k, l) , Ys_L, E_L)
-                                    call get_mixture_energy_mass( q_prim_vf(tempxb)%sf(j+1, k, l) , Ys_R, E_R)
+
+                                   T_L = qL_prim_rs${XYZ}$_vf(j, k, l, tempxb)
+                                   T_R = qR_prim_rs${XYZ}$_vf(j+1, k, l, tempxb)
+
+                                    call get_mixture_energy_mass( T_L , Ys_L, E_L)
+                                    call get_mixture_energy_mass( T_R , Ys_R, E_R)
                                     E_L=rho_L*E_L+5d-1*rho_L*vel_L_rms
 
                                     E_R=rho_R*E_R+5d-1*rho_R*vel_R_rms
                                     
-                                    H_L =  q_prim_vf(tempxb)%sf(j, k, l)*(1+gamma_L)*263.0d0+0.5d0*vel_L_rms
-                                    H_R =  q_prim_vf(tempxb)%sf(j+1, k, l)*(1+gamma_R)*263.0d0+0.5d0*vel_R_rms
+                                    H_L =  T_L*(1+gamma_L)*263.0d0+0.5d0*vel_L_rms
+                                    H_R =  T_R*(1+gamma_R)*263.0d0+0.5d0*vel_R_rms
                               
                                   else 
 

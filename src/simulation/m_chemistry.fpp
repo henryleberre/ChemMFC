@@ -78,7 +78,7 @@ contains
 
                             ! \nabla \cdot (F)
                             rhs_vf(eqn)%sf(x, y, z) = rhs_vf(eqn)%sf(x, y, z) + &
-                                                      (flux_n(${NORM_DIR}$)%vf(eqn)%sf(x - mx, y - my, z - mz) - &
+                                                      (flux_n(${NORM_DIR}$)%vf(eqn)%sf(x-  mx, y-  my, z - mz) - &
                                                        flux_n(${NORM_DIR}$)%vf(eqn)%sf(x, y, z))/d${XYZ}$ (${XYZ}$)
 
                         end do
@@ -120,27 +120,29 @@ contains
                         ! Maybe use q_prim_vf instead?
                         rho = 0d0
                         do eqn = chemxb, chemxe
-                            rho = rho + q_cons_qp(eqn)%sf(x, y, z)
+                            rho = rho + q_prim_qp(eqn)%sf(x, y, z)
                         end do
 
                         do eqn = chemxb, chemxe
-                            Ys(eqn - chemxb + 1) = q_cons_qp(eqn)%sf(x, y, z)/rho
+                            Ys(eqn - chemxb + 1) = q_prim_qp(eqn)%sf(x, y, z)/rho
                         end do
 
                         dyn_pres = 0d0
 
                         do i = momxb, momxe
-                            dyn_pres = dyn_pres + rho*q_cons_qp(i)%sf(x, y, z)* &
-                                       q_cons_qp(i)%sf(x, y, z)/2d0
+                            dyn_pres = dyn_pres + rho*q_prim_qp(i)%sf(x, y, z)* &
+                                       q_prim_qp(i)%sf(x, y, z)/2d0
                         end do
 
-                        call get_temperature(q_cons_qp(E_idx)%sf(x, y, z) - dyn_pres, &
-                            & q_prim_qp(tempxb)%sf(x, y, z), Ys, .true., T)
+                        !print*, "react", x, y, z, rho, q_cons_qp(E_idx)%sf(x, y, z), dyn_pres, q_prim_qp(tempxb)%sf(x, y, z), Ys
+                        call get_temperature(q_cons_qp(E_idx)%sf(x,y,z)/rho - dyn_pres/rho, &
+                            & 1200d0, Ys, .true., T)
+                        !print*, x,y,z,T
 
                         call get_net_production_rates(rho, T, Ys, omega)
 
-                        q_cons_qp(tempxb)%sf(x, y, z) = T
-                        q_prim_qp(tempxb)%sf(x, y, z) = T
+                       !q_cons_qp(tempxb)%sf(x, y, z) = T
+                       !q_prim_qp(tempxb)%sf(x, y, z) = T
 
                         !print*, x, y, z, T, rho, Ys, omega, q_cons_qp(E_idx)%sf(x, y, z), dyn_pres
 
@@ -171,9 +173,9 @@ contains
         integer :: eqn
 
         !$acc parallel loop collapse(4)
-        do x = ix%beg, ix%end
-            do y = iy%beg, iy%end
-                do z = iz%beg, iz%end
+        do x = 0, m
+            do y = 0, n
+                do z = 0, p
 
                     do eqn = chemxb, chemxe
                         q_cons_qp(eqn)%sf(x, y, z) = max(0d0, q_cons_qp(eqn)%sf(x, y, z))

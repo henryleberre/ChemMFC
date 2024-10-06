@@ -127,21 +127,21 @@ contains
         !! @param pres Pressure to calculate
         !! @param stress Shear Stress
         !! @param mom Momentum
-    subroutine s_compute_pressure(energy, alf, dyn_p, pi_inf, gamma, rho, qv, rhoYks, pres, Temp, stress, mom, G)
+    subroutine s_compute_pressure(energy, alf, dyn_p, pi_inf, gamma, rho, qv, rhoYks, pres, T, stress, mom, G)
 
         !$acc routine seq
 
         real(kind(0d0)), intent(in) :: energy, alf
         real(kind(0d0)), intent(in) :: dyn_p
         real(kind(0d0)), intent(in) :: pi_inf, gamma, rho, qv
-        real(kind(0d0)), intent(out) :: pres, Temp
+        real(kind(0d0)), intent(out) :: pres, T
         real(kind(0d0)), intent(in), optional :: stress, mom, G
 
         ! Chemistry
         integer :: i
         real(kind(0d0)), dimension(1:num_species), intent(in) :: rhoYks
         real(kind(0d0)) :: E_e
-        real(kind(0d0)) :: T,e_Per_Kg,Pdyn_Per_Kg
+        real(kind(0d0)) :: e_Per_Kg,Pdyn_Per_Kg
         real(kind(0d0)), dimension(1:num_species) :: Y_rs
 
         integer :: s !< Generic loop iterator
@@ -192,13 +192,9 @@ contains
             e_Per_Kg=energy/rho
             Pdyn_Per_Kg=dyn_p/rho
 
-            if (sum(Y_rs) > 1d-16) then
-                call get_temperature(e_Per_Kg - Pdyn_Per_Kg, 1200d0, Y_rs, .true., T)
-                call get_pressure(rho, T, Y_rs, pres)
-                Temp=T
-            else
-                pres = 0d0
-            end if
+            !print*, "s_compute_pres", e_Per_Kg, Pdyn_Per_Kg, Y_rs
+            call get_temperature(e_Per_Kg - Pdyn_Per_Kg, 1200d0, Y_rs, .true., T)
+            call get_pressure(rho, T, Y_rs, pres)
 
         #:endif
 
@@ -890,7 +886,7 @@ contains
 
         real(kind(0d0)) :: G_K
 
-        real(kind(0d0)) :: pres, Yksum,Temp
+        real(kind(0d0)) :: pres, Yksum, T
 
         integer :: i, j, k, l, q !< Generic loop iterators
 
@@ -1008,10 +1004,12 @@ contains
 
                     call s_compute_pressure(qK_cons_vf(E_idx)%sf(j, k, l), &
                                             qK_cons_vf(alf_idx)%sf(j, k, l), &
-                                            dyn_pres_K, pi_inf_K, gamma_K, rho_K, qv_K, rhoYks, pres, Temp)
+                                            dyn_pres_K, pi_inf_K, gamma_K, rho_K, qv_K, rhoYks, pres, T)
 
                     qK_prim_vf(E_idx)%sf(j, k, l) = pres
-                    qK_prim_vf(tempxb)%sf(j, k, l) = Temp
+                    if (chemistry) then
+                        qK_prim_vf(tempxb)%sf(j, k, l) = T
+                    end if
 
                     if (bubbles) then
                         !$acc loop seq
@@ -1122,7 +1120,7 @@ contains
         integer :: spec
 
         real(kind(0d0)), dimension(num_species) :: Ys
-        real(kind(0d0)) :: temperature, e_mix, mix_mol_weight, T
+        real(kind(0d0)) :: e_mix, mix_mol_weight, T
 
 #ifndef MFC_SIMULATION
         ! Converting the primitive variables to the conservative variables
@@ -1163,7 +1161,8 @@ contains
                         end do
 
                         call get_mixture_molecular_weight(Ys, mix_mol_weight)
-                        T = q_prim_vf(E_idx)%sf(j, k, l)*mix_mol_weight/(gas_constant*rho)
+                        T = q_prim_vf(tempxb)%sf(j, k, l)
+                        !T = q_prim_vf(E_idx)%sf(j, k, l)*mix_mol_weight/(gas_constant*rho)
                         call get_mixture_energy_mass(T, Ys, e_mix)
 
                         q_cons_vf(E_idx)%sf(j, k, l) = &

@@ -807,8 +807,18 @@ contains
             ix, iy, iz)
         call nvtxEndRange
 
+        !do i = 1, buff_size
+        !    print*, i, "T", q_prim_qp%vf(tempxb)%sf(m + i, 0, 0)
+        !    print*, i, "p", q_prim_qp%vf(E_idx)%sf(m + i, 0, 0)
+        !end do
+
         call nvtxStartRange("RHS-MPI")
         call s_populate_variables_buffers(q_prim_qp%vf, pb, mv)
+
+        !do i = 1, buff_size
+        !    print*, i, "T", q_prim_qp%vf(tempxb)%sf(m + i, 0, 0)
+        !    print*, i, "p", q_prim_qp%vf(E_idx)%sf(m + i, 0, 0)
+        !end do
 
         call nvtxEndRange
 
