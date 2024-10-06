@@ -649,6 +649,7 @@ contains
         real(kind(0d0)), dimension(num_fluids) :: adv, dadv_ds
         real(kind(0d0)), dimension(sys_size) :: L
         real(kind(0d0)), dimension(3) :: lambda
+        real(kind(0d0)), dimension(num_species) :: Y_s
 
         real(kind(0d0)) :: rho         !< Cell averaged density
         real(kind(0d0)) :: pres        !< Cell averaged pressure
@@ -786,9 +787,25 @@ contains
                         do i = 1, num_dims
                             vel_K_sum = vel_K_sum + vel(i)**2d0
                         end do
+                          pres = q_prim_rs${XYZ}$_vf(0, k, r, E_idx)
+                        if (chemistry .and. chem_params%advection) then 
+                             do i = chemxb, chemxe
+                                 Y_s(i - chemxb + 1) = q_prim_rs${XYZ}$_vf(0, k, r, i)
+                             end do
+                             call get_mixture_energy_mass( q_prim_rs${XYZ}$_vf(0, k, r, tempxb), Y_s, E)
+                            call get_pressure(rho,  q_prim_rs${XYZ}$_vf(0, k, r, tempxb), Y_s, pres)
+                            E=rho*E+5d-1*rho*vel_K_sum    
+                             print *, Y_s
+                             H =q_prim_rs${XYZ}$_vf(0, k, r, tempxb)*(1+gamma)*263.0d0+0.5d0*vel_K_sum
+                                                             
+                         else 
+                             E = gamma*pres + pi_inf + 5d-1*rho*vel_K_sum
+                             H = (E + pres)/rho
 
-                        pres = q_prim_rs${XYZ}$_vf(0, k, r, E_idx)
+                        end if
 
+                      
+                      
                         !$acc loop seq
                         do i = 1, advxe - E_idx
                             adv(i) = q_prim_rs${XYZ}$_vf(0, k, r, E_idx + i)
@@ -804,10 +821,7 @@ contains
                         do i = 1, contxe
                             mf(i) = alpha_rho(i)/rho
                         end do
-
-                        E = gamma*pres + pi_inf + 5d-1*rho*vel_K_sum
-
-                        H = (E + pres)/rho
+                        
 
                         ! Compute mixture sound speed
                         call s_compute_speed_of_sound(pres, rho, gamma, pi_inf, H, adv, vel_K_sum, c)
@@ -1284,7 +1298,7 @@ contains
         end if
         ! END: Reshaping Inputted Data in z-direction ======================
 
-        ! Association of the procedural pointer to the appropriate procedure
+        ! Association of the procedural pointer to the appropria:te procedure
         ! that will be utilized in the evaluation of L variables for the CBC
 
         ! ==================================================================

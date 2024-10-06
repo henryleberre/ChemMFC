@@ -1057,7 +1057,7 @@ contains
         real(kind(0d0)) :: E_e
         real(kind(0d0)), dimension(6) :: tau_e
         real(kind(0d0)) :: G
-        real(kind(0d0)) :: dyn_p
+        real(kind(0d0)) :: dyn_p,Temp
 
         integer :: i, j, k, l, s, q !< Generic loop iterator
 
@@ -1143,14 +1143,14 @@ contains
                         call s_compute_pressure( &
                             q_cons_vf(1)%sf(j - 2, k, l), &
                             q_cons_vf(alf_idx)%sf(j - 2, k, l), &
-                            dyn_p, pi_inf, gamma, rho, qv, q_cons_vf(chemxb:chemxe), j - 2, k, l, pres, &
+                            dyn_p, pi_inf, gamma, rho, qv, q_cons_vf(chemxb:chemxe), j - 2, k, l, pres, Temp ,&
                             q_cons_vf(stress_idx%beg)%sf(j - 2, k, l), &
                             q_cons_vf(mom_idx%beg)%sf(j - 2, k, l), G)
                     else
                         call s_compute_pressure( &
                             q_cons_vf(1)%sf(j - 2, k, l), &
                             q_cons_vf(alf_idx)%sf(j - 2, k, l), &
-                            dyn_p, pi_inf, gamma, rho, qv, q_cons_vf(chemxb:chemxe), j - 2, k, l, pres)
+                            dyn_p, pi_inf, gamma, rho, qv, q_cons_vf(chemxb:chemxe), j - 2, k, l, pres,Temp)
                     end if
 
                     if (model_eqns == 4) then
@@ -1238,14 +1238,14 @@ contains
                         end do
 
                         dyn_p = 0.5d0*rho*dot_product(vel, vel)
-
+ 
                         if (hypoelasticity) then
                             call s_compute_pressure( &
                                 q_cons_vf(1)%sf(j - 2, k - 2, l), &
                                 q_cons_vf(alf_idx)%sf(j - 2, k - 2, l), &
                                 dyn_p, pi_inf, gamma, rho, qv, &
                                 q_cons_vf(chemxb:chemxe), j - 2, k - 2, l, &
-                                pres, &
+                                pres,Temp, &
                                 q_cons_vf(stress_idx%beg)%sf(j - 2, k - 2, l), &
                                 q_cons_vf(mom_idx%beg)%sf(j - 2, k - 2, l), G)
                         else
@@ -1253,8 +1253,8 @@ contains
                                                     q_cons_vf(alf_idx)%sf(j - 2, k - 2, l), &
                                                     dyn_p, pi_inf, gamma, rho, qv, &
                                                     q_cons_vf(chemxb:chemxe), j - 2, k - 2, l,&
-                                                    pres)
-                        end if
+                                                    pres,Temp)
+                        end if 
 
                         if (model_eqns == 4) then
                             lit_gamma = 1d0/fluid_pp(1)%gamma + 1d0
@@ -1332,7 +1332,7 @@ contains
                                     q_cons_vf(alf_idx)%sf(j - 2, k - 2, l - 2), &
                                     dyn_p, pi_inf, gamma, rho, qv, &
                                     q_cons_vf(chemxb:chemxe), j - 2, k - 2, l - 2, &
-                                    pres, &
+                                    pres,Temp, &
                                     q_cons_vf(stress_idx%beg)%sf(j - 2, k - 2, l - 2), &
                                     q_cons_vf(mom_idx%beg)%sf(j - 2, k - 2, l - 2), G)
                             else
@@ -1340,7 +1340,7 @@ contains
                                                         q_cons_vf(alf_idx)%sf(j - 2, k - 2, l - 2), &
                                                         dyn_p, pi_inf, gamma, rho, qv, &
                                                         q_cons_vf(chemxb:chemxe), j - 2, k - 2, l - 2, &
-                                                        pres)
+                                                        pres,Temp)
                             end if
 
                             ! Compute mixture sound speed

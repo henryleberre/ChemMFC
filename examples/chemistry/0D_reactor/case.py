@@ -11,8 +11,8 @@ sol     = ct.Solution(ctfile)
 
 sol.TPX = 1300, ct.one_atm, {'H2': 0.43, 'O2': 1.6*0.43, 'AR': 1 - 0.43 - 1.6*0.43}
 
-dt = 1e-9
-Tend = 5e-6
+dt = 2e-9
+Tend = 8e-6
 
 NT=int(Tend/dt)
 SAVE_COUNT=60

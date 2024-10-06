@@ -15,12 +15,12 @@ sol_R.TPX = 1200, 80000, 'H2:2,O2:1,AR:7'
 L    = 0.10
 Nx   = 400
 dx   = L/Nx
-dt   = 5e-9
+dt   = 1e-7
 Tend = 40e-6
 
 NT=int(Tend/dt)
-SAVE_COUNT=200
-NS=NT//SAVE_COUNT
+SAVE_COUNT=3
+NS=3
 
 chemistry = True
 
@@ -59,13 +59,13 @@ case = {
     'wave_speeds'                  : 1,
     'avg_state'                    : 2,
     'bc_x%beg'                     :-2,
-    'bc_x%end'                     :-8,
+    'bc_x%end'                     :-2,
 
     # Chemistry ================================================================
-    'chemistry'                    : 'F' if not chemistry else 'T',
+    'chemistry'                    : 'T' if not chemistry else 'T',
     'chem_params%advection'        : 'T',
     'chem_params%diffusion'        : 'F',
-    'chem_params%reactions'        : 'T',
+    'chem_params%reactions'        : 'F',
     # ==========================================================================
 
     # Formatted Database Files Structure Parameters ============================
@@ -93,7 +93,7 @@ case = {
     # ==========================================================================
 
     # Fluids Physical Parameters ===============================================
-    'fluid_pp(1)%gamma'            : 1.0E+00/(4.4E+00-1.0E+00),
+    'fluid_pp(1)%gamma'            : 1.0E+00/(1.55E+00-1.0E+00),
     'fluid_pp(1)%pi_inf'           : 0,
     # ==========================================================================
 

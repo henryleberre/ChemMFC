@@ -101,7 +101,7 @@ ARGS        = vars(parser.parse_args())
 DIRPATH     = os.path.abspath(ARGS['case_dir'])
 OUTDIR      = os.path.join(DIRPATH, 'viz')
 CASENAME    = os.path.basename(DIRPATH)
-DESCRIPTION = "0D React - Chemistry = T, Advection = T, Diffusion = F, Reactions = T"
+DESCRIPTION = "1D Intert_Gas- Chemistry = T, Advection = T, Diffusion = F, Reactions = F"
 
 TARGET_ASPECT_RATIO = 16 / 9
 

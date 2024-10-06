@@ -11,9 +11,9 @@ sol     = ct.Solution(ctfile)
 sol.TPX = 1000, ct.one_atm, 'H2:2,O2:1,AR:7'
 
 sol_l = ct.Solution(ctfile)
-sol_l.TPX = 900, 7173,  'H2:2,O2:1,AR:7'
+sol_l.TPX = 378.2519, 7173,  'H2:2,O2:1,AR:7'
 sol_r = ct.Solution(ctfile)
-sol_r.TPX = 500, 35594, 'H2:2,O2:1,AR:7'
+sol_r.TPX = 747.67244, 35594, 'H2:2,O2:1,AR:7'
 
 rho_l = sol_l.density
 u_l   = 0
@@ -25,12 +25,12 @@ p_r   = sol_r.P
 L  = 0.12
 Nx = 400
 dx = L/Nx
-dt = dx/abs(u_r)*0.1
-Tend=230e-6
+dt = dx/abs(u_r)*0.01
+Tend=100e-9
 
 NT=int(Tend/dt)
-SAVE_COUNT=200
-NS=NT//SAVE_COUNT
+SAVE_COUNT=1
+NS=1
 
 chemistry = True
 
@@ -72,10 +72,10 @@ case = {
     'bc_x%end'                     :-8,
 
     # Chemistry ================================================================
-    'chemistry'                    : 'F' if not chemistry else 'T',
+    'chemistry'                    : 'T' if not chemistry else 'T',
     'chem_params%advection'        : 'T',
     'chem_params%diffusion'        : 'F',
-    'chem_params%reactions'        : 'T',
+    'chem_params%reactions'        : 'F',
     # ==========================================================================
 
     # Formatted Database Files Structure Parameters ============================
@@ -105,7 +105,7 @@ case = {
     # ==========================================================================
 
     # Fluids Physical Parameters ===============================================
-    'fluid_pp(1)%gamma'            : 1.0E+00/(4.4E+00-1.0E+00),
+    'fluid_pp(1)%gamma'            : 1.0E+00/(1.55E+00-1.0E+00),
     'fluid_pp(1)%pi_inf'           : 0,
     # ==========================================================================
 
