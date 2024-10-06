@@ -134,8 +134,8 @@ contains
                                        q_cons_qp(i)%sf(x, y, z)/2d0
                         end do
 
-                        call get_temperature(.true., q_cons_qp(E_idx)%sf(x, y, z) - dyn_pres, &
-                            & q_prim_qp(tempxb)%sf(x, y, z), Ys, T)
+                        call get_temperature(q_cons_qp(E_idx)%sf(x, y, z) - dyn_pres, &
+                            & q_prim_qp(tempxb)%sf(x, y, z), Ys, .true., T)
 
                         call get_net_production_rates(rho, T, Ys, omega)
 
