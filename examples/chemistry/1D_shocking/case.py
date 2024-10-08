@@ -8,7 +8,7 @@ import cantera as ct
 
 ctfile  = 'h2o2.yaml'
 sol     = ct.Solution(ctfile)
-sol.TPX = 1400, ct.one_atm, 'H2:2,O2:1,AR:7'
+sol.TPX = 1400, ct.one_atm, 'H2:2,O2:1,N2:7'
 
 rho_l = sol.density
 u_l   = 0
@@ -28,7 +28,7 @@ p_r   = sol.P
 L  = 0.12
 Nx = 1000
 dx = L/Nx
-dt = dx/abs(u_r)*0.01
+dt = dx/abs(u_r)*0.1
 Tend=230e-6
 
 NT=int(Tend/dt)
