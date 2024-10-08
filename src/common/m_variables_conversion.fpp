@@ -192,7 +192,6 @@ contains
             e_Per_Kg=energy/rho
             Pdyn_Per_Kg=dyn_p/rho
 
-            !print*, "s_compute_pres", e_Per_Kg, Pdyn_Per_Kg, Y_rs
             call get_temperature(e_Per_Kg - Pdyn_Per_Kg, 1200d0, Y_rs, .true., T)
             call get_pressure(rho, T, Y_rs, pres)
 

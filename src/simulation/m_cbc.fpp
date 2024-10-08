@@ -784,24 +784,9 @@ contains
                         do i = 1, num_dims
                             vel_K_sum = vel_K_sum + vel(i)**2d0
                         end do
-                          pres = q_prim_rs${XYZ}$_vf(0, k, r, E_idx)
-                        if (chemistry .and. chem_params%advection) then 
-                             do i = chemxb, chemxe
-                                 Y_s(i - chemxb + 1) = q_prim_rs${XYZ}$_vf(0, k, r, i)
-                             end do
-                             call get_mixture_energy_mass( q_prim_rs${XYZ}$_vf(0, k, r, tempxb), Y_s, E)
-                            call get_pressure(rho,  q_prim_rs${XYZ}$_vf(0, k, r, tempxb), Y_s, pres)
-                            E=rho*E+5d-1*rho*vel_K_sum    
-                             H =q_prim_rs${XYZ}$_vf(0, k, r, tempxb)*(1+gamma)*263.0d0+0.5d0*vel_K_sum
-                                                             
-                         else 
-                             E = gamma*pres + pi_inf + 5d-1*rho*vel_K_sum
-                             H = (E + pres)/rho
 
-                        end if
+                        pres = q_prim_rs${XYZ}$_vf(0, k, r, E_idx)
 
-                      
-                      
                         !$acc loop seq
                         do i = 1, advxe - E_idx
                             adv(i) = q_prim_rs${XYZ}$_vf(0, k, r, E_idx + i)
@@ -817,7 +802,9 @@ contains
                         do i = 1, contxe
                             mf(i) = alpha_rho(i)/rho
                         end do
-                        
+
+                        E = gamma*pres + pi_inf + 5d-1*rho*vel_K_sum
+                        H = (E + pres)/rho
 
                         ! Compute mixture sound speed
                         call s_compute_speed_of_sound(pres, rho, gamma, pi_inf, H, adv, vel_K_sum, c)

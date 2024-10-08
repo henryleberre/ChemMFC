@@ -1,36 +1,38 @@
 #!/usr/bin/env python3
 
-# https://www.sciencedirect.com/science/article/pii/S0045793013003976?via=ihub
-# 4.6. Perfectly stirred reactor
+# Reference:
+# + https://doi.org/10.1063/1.1696266
 
-import re, json, argparse
+from mfc.case_utils import *
+
+import json, argparse
 import cantera as ct
 
 parser = argparse.ArgumentParser(
     prog="nD_Reactor",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
- 
-parser.add_argument("--mfc", type=str, metavar="DICT", default='')
-parser.add_argument("-nc", "--no-chem", action="store_false",
-    help="Disable chemistry.", dest='chem', default=True)
-parser.add_argument("-s",  "--scale", type=float, default=1, help="Scale.")
-parser.add_argument("-d",  "--ndim", type=int, default=1,
-    help="Number of dimensions.")
- 
+
+parser.add_argument("--mfc",     type=str,    default='{}', metavar="DICT")
+parser.add_argument("--no-chem", dest='chem', default=True, action="store_false",
+                                 help="Disable chemistry.")
+parser.add_argument("--scale",   type=float,  default=1,    help="Scale.")
+parser.add_argument("--ndim",    type=int,    default=1,    help="Number of dimensions.")
+
 args = parser.parse_args()
 
-ctfile  = 'gri30.yaml'
+ctfile  = 'h2o2.yaml'
 sol     = ct.Solution(ctfile)
 
-sol.TPX = 1300, ct.one_atm, {'H2': 0.43, 'O2': 1.6*0.43, 'AR': 1 - 0.43 - 1.6*0.43}
+sol.TPX = 1_600, ct.one_atm, 'H2:0.04, O2:0.02, AR:0.94'
 
-Nx   = 25*args.scale
-Tend = 1e-6
+Nx   = 25 * args.scale
+Tend = 1e-4
 s    = 1e-2
 dt   = 1e-9
 
-NT = int(Tend/dt)
-NS = NT//60
+NT         = int(Tend / dt)
+SAVE_COUNT = 2000
+NS         = NT // SAVE_COUNT
 
 case = {
     # Logistics ================================================================
@@ -45,8 +47,8 @@ case = {
     'z_domain%beg'                 : -s/2,
     'z_domain%end'                 : +s/2,
     'm'                            : Nx,
-    'n'                            : Nx if args.ndim > 1 else 0,
-    'p'                            : Nx if args.ndim > 2 else 0,
+    'n'                            : Nx,
+    'p'                            : Nx,
     'dt'                           : float(dt),
     't_step_start'                 : 0,
     't_step_stop'                  : NT,
@@ -82,6 +84,7 @@ case = {
     'prim_vars_wrt'                : 'T',
     # ==========================================================================
 
+    # Patch 1 ==================================================================
     'patch_icpp(1)%geometry'       : 3**(args.ndim - 1),
     'patch_icpp(1)%x_centroid'     : 0,
     'patch_icpp(1)%y_centroid'     : 0,
@@ -101,39 +104,23 @@ case = {
     'fluid_pp(1)%gamma'            : 1.0E+00/(4.4E+00-1.0E+00),
     'fluid_pp(1)%pi_inf'           : 0,
     # ==========================================================================
-
-    # Chemistry ================================================
-    'cantera_file'                 : ctfile,
-    # ==========================================================
 }
 
 if args.chem:
-    # Chemistry ================================================================
     case.update({
+        # Chemistry ============================================================
         'chemistry'             : 'T',
-        'chem_params%advection' : 'T',
+        'chem_params%advection' : 'F',
         'chem_params%diffusion' : 'F',
         'chem_params%reactions' : 'T',
+        'cantera_file'          : ctfile,
+        # ======================================================================
     })
 
     for i in range(len(sol.Y)):
         case[f'patch_icpp(1)%Y({i+1})'] = sol.Y[i]
 
-rmdims = []
-if args.ndim < 3: rmdims += ['z']
-if args.ndim < 2: rmdims += ['y']
-
-dkeys = set()
-for key in case.keys():
-    for dim in rmdims:
-        dirid = 3 if dim == 'z' else 2
-
-        if (  re.match(f'.+_{dim}', key) or re.match(f'{dim}_.+', key)
-           or re.match(f'%{dim}', key)   or f'%vel({dirid})' in key):
-            dkeys.add(key)
-            break
-
-case = {k: v for k, v in case.items() if k not in dkeys}
+case = remove_higher_dimensional_keys(case, args.ndim)
 
 if __name__ == '__main__':
     print(json.dumps(case))

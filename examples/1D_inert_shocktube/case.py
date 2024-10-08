@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-# https://www.sciencedirect.com/science/article/pii/S0045793013003976?via=ihub
-# 4.6. Perfectly stirred reactor
+# References:
+# + https://doi.org/10.1006/jcph.1996.5622:          4.1. Separating Box Problem
+# + https://doi.org/10.1016/j.compfluid.2013.10.014: 4.3. Multi-component inert shock tube
 
 import json
 import cantera as ct
 
-ctfile  = 'h2o2.yaml'
+ctfile    = 'h2o2.yaml'
 sol_L     = ct.Solution(ctfile)
 sol_L.TPX =  400,  8000, 'H2:2,O2:1,AR:7'
 sol_R     = ct.Solution(ctfile)
@@ -14,15 +15,14 @@ sol_R.TPX = 1200, 80000, 'H2:2,O2:1,AR:7'
 
 L    = 0.10
 Nx   = 400
-dx   = L/Nx
+dx   = L / Nx
 dt   = 5e-9
 Tend = 40e-6
 
-NT=int(Tend/dt)
-SAVE_COUNT=200
-NS=NT//SAVE_COUNT
-
-chemistry = True
+chemistry  = True
+NT         = int(Tend / dt)
+SAVE_COUNT = 200
+NS         = NT // SAVE_COUNT
 
 case = {
     # Logistics ================================================================
@@ -41,6 +41,7 @@ case = {
     't_step_save'                  : NS,
     't_step_print'                 : NS,
     'parallel_io'                  : 'F',
+    # ==========================================================================
 
     # Simulation Algorithm Parameters ==========================================
     'model_eqns'                   : 2,
@@ -59,6 +60,7 @@ case = {
     'avg_state'                    : 2,
     'bc_x%beg'                     :-2,
     'bc_x%end'                     :-3,
+    # ==========================================================================
 
     # Chemistry ================================================================
     'chemistry'                    : 'F' if not chemistry else 'T',
@@ -73,6 +75,7 @@ case = {
     'prim_vars_wrt'                : 'T',
     # ==========================================================================
 
+    # ==========================================================================
     'patch_icpp(1)%geometry'       : 1,
     'patch_icpp(1)%x_centroid'     : -L/4,
     'patch_icpp(1)%length_x'       : L/2,
@@ -82,6 +85,7 @@ case = {
     'patch_icpp(1)%alpha_rho(1)'   : sol_L.density,
     # ==========================================================================
 
+    # ==========================================================================
     'patch_icpp(2)%geometry'       : 1,
     'patch_icpp(2)%x_centroid'     : L/4,
     'patch_icpp(2)%length_x'       : L/2,
@@ -96,9 +100,9 @@ case = {
     'fluid_pp(1)%pi_inf'           : 0,
     # ==========================================================================
 
-    # Chemistry ================================================
+    # Chemistry ================================================================
     'cantera_file'                 : ctfile,
-    # ==========================================================
+    # ==========================================================================
 }
 
 if chemistry:

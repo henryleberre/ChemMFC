@@ -477,6 +477,7 @@ contains
                             end if
 
                             if (chemistry .and. chem_params%advection) then
+                            #:if chemistry
                                 !$acc loop seq
                                 do i = chemxb, chemxe
                                     Ys_L(i - chemxb + 1) = qL_prim_rs${XYZ}$_vf(j,   k, l, i)
@@ -510,6 +511,7 @@ contains
 
                                 H_L = T_L*(1+gamma_L)*R_gas_L+0.5d0*vel_L_rms
                                 H_R = T_R*(1+gamma_R)*R_gas_R+0.5d0*vel_R_rms
+                            #:endif
                             else
                                 E_L = gamma_L*pres_L + pi_inf_L + 5d-1*rho_L*vel_L_rms + qv_L
                                 E_R = gamma_R*pres_R + pi_inf_R + 5d-1*rho_R*vel_R_rms + qv_R
