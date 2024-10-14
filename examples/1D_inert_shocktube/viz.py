@@ -13,7 +13,7 @@ case = mfc.viz.Case(".")
 
 os.makedirs("viz", exist_ok=True)
 
-sns.set_theme(style=mfc.viz.generate_cpg_style())
+#sns.set_theme(style=mfc.viz.generate_cpg_style())
 
 Y_VARS = ["H2", "O2", "H2O", "N2"]
 
