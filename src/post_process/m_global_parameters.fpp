@@ -20,6 +20,8 @@ module m_global_parameters
 
     use m_thermochem            !< Thermodynamic and chemical properties module
 
+    use m_global_parameters_common
+
     ! ==========================================================================
 
     implicit none
@@ -109,6 +111,7 @@ module m_global_parameters
     logical :: mixture_err     !< Mixture error limiter
     logical :: alt_soundspeed  !< Alternate sound speed
     logical :: hypoelasticity  !< Turn hypoelasticity on
+    logical :: rdma_mpi        !< Turn on RDMA for MPI
     logical, parameter :: chemistry = .${chemistry}$. !< Chemistry modeling
     !> @}
 
@@ -133,6 +136,9 @@ module m_global_parameters
     !> @name Boundary conditions in the x-, y- and z-coordinate directions
     !> @{
     type(int_bounds_info) :: bc_x, bc_y, bc_z
+    integer :: num_bc_patches
+    type(bc_patch_parameters) :: patch_bc(num_bc_patches_max)
+    type(bounds_info) :: x_domain, y_domain, z_domain
     !> @}
 
     logical :: parallel_io    !< Format of the data files
@@ -317,6 +323,7 @@ contains
         relax = .false.
         relax_model = dflt_int
         hypoelasticity = .false.
+        rdma_mpi = .false.
 
         bc_x%beg = dflt_int; bc_x%end = dflt_int
         bc_y%beg = dflt_int; bc_y%end = dflt_int
@@ -328,6 +335,8 @@ contains
                 bc_${DIM}$%ve${DIR}$ = 0d0
             #:endfor
         #:endfor
+
+        call s_bc_assign_default_values_to_user_inputs(num_bc_patches, patch_bc)
 
         ! Fluids physical parameters
         do i = 1, num_fluids_max

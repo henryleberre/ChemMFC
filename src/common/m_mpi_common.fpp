@@ -13,9 +13,12 @@ module m_mpi_common
     use mpi                    !< Message passing interface (MPI) module
 #endif
 
+    use m_helper
+
     use m_derived_types        !< Definitions of the derived types
 
     use m_global_parameters    !< Definitions of the global parameters
+
     ! ==========================================================================
 
     implicit none
@@ -24,6 +27,31 @@ module m_mpi_common
     !> @{
     integer, private :: ierr
     !> @}
+
+#ifndef MFC_PRE_PROCESS
+#ifdef CRAY_ACC_WAR
+    @:CRAY_DECLARE_GLOBAL(real(kind(0d0)), dimension(:), q_cons_buff_send)
+    @:CRAY_DECLARE_GLOBAL(real(kind(0d0)), dimension(:), q_cons_buff_recv)
+
+    !$acc declare link(q_cons_buff_recv, q_cons_buff_send)
+#else
+    real(kind(0d0)), private, allocatable, dimension(:), target :: q_cons_buff_send !<
+    !! This variable is utilized to pack and send the buffer of the cell-average
+    !! conservative variables, for a single computational domain boundary at the
+    !! time, to the relevant neighboring processor.
+
+    real(kind(0d0)), private, allocatable, dimension(:), target :: q_cons_buff_recv !<
+    !! q_cons_buff_recv is utilized to receive and unpack the buffer of the cell-
+    !! average conservative variables, for a single computational domain boundary
+    !! at the time, from the relevant neighboring processor.
+
+    !$acc declare create(q_cons_buff_send, q_cons_buff_recv)
+#endif
+
+    integer :: v_size
+
+    !$acc declare create(v_size)
+#endif
 
 contains
 
@@ -59,6 +87,72 @@ contains
 #endif
 
     end subroutine s_mpi_initialize
+
+    subroutine s_initialize_mpi_common_module()
+
+#if defined(MFC_MPI) && !defined(MFC_PRE_PROCESS)
+
+        ! Allocating q_cons_buff_send/recv and ib_buff_send/recv. Please note that
+        ! for the sake of simplicity, both variables are provided sufficient
+        ! storage to hold the largest buffer in the computational domain.
+
+#ifdef MFC_SIMULATION
+        if (qbmm .and. .not. polytropic) then
+            if (n > 0) then
+                if (p > 0) then
+                    @:ALLOCATE_GLOBAL(q_cons_buff_send(0:-1 + buff_size*(sys_size + 2*nb*4)* &
+                                             & (m + 2*buff_size + 1)* &
+                                             & (n + 2*buff_size + 1)* &
+                                             & (p + 2*buff_size + 1)/ &
+                                             & (min(m, n, p) + 2*buff_size + 1)))
+                else
+                    @:ALLOCATE_GLOBAL(q_cons_buff_send(0:-1 + buff_size*(sys_size + 2*nb*4)* &
+                                             & (max(m, n) + 2*buff_size + 1)))
+                end if
+            else
+                @:ALLOCATE_GLOBAL(q_cons_buff_send(0:-1 + buff_size*(sys_size + 2*nb*4)))
+            end if
+
+            @:ALLOCATE_GLOBAL(q_cons_buff_recv(0:ubound(q_cons_buff_send, 1)))
+
+            v_size = sys_size + 2*nb*4
+        else
+#endif
+            if (n > 0) then
+                if (p > 0) then
+                    @:ALLOCATE_GLOBAL(q_cons_buff_send(0:-1 + buff_size*sys_size* &
+                                             & (m + 2*buff_size + 1)* &
+                                             & (n + 2*buff_size + 1)* &
+                                             & (p + 2*buff_size + 1)/ &
+                                             & (min(m, n, p) + 2*buff_size + 1)))
+                else
+                    @:ALLOCATE_GLOBAL(q_cons_buff_send(0:-1 + buff_size*sys_size* &
+                                             & (max(m, n) + 2*buff_size + 1)))
+                end if
+            else
+                @:ALLOCATE_GLOBAL(q_cons_buff_send(0:-1 + buff_size*sys_size))
+            end if
+
+            @:ALLOCATE_GLOBAL(q_cons_buff_recv(0:ubound(q_cons_buff_send, 1)))
+
+            v_size = sys_size
+#if MFC_SIMULATION
+        end if
+#endif
+
+        !$acc update device(v_size)
+
+#endif
+        
+    end subroutine s_initialize_mpi_common_module
+
+    subroutine s_finalize_mpi_common_module()
+
+#if defined(MFC_MPI) && !defined(MFC_PRE_PROCESS)
+        @:DEALLOCATE_GLOBAL(q_cons_buff_send, q_cons_buff_recv)
+#endif
+
+    end subroutine s_finalize_mpi_common_module
 
     !! @param q_cons_vf Conservative variables
     !! @param ib_markers track if a cell is within the immersed boundary
@@ -438,5 +532,154 @@ contains
 #endif
 
     end subroutine s_mpi_finalize
+
+#ifndef MFC_PRE_PROCESS
+    !>  The goal of this procedure is to populate the buffers of
+        !!      the cell-average conservative variables by communicating
+        !!      with the neighboring processors.
+        !!  @param q_cons_vf Cell-average conservative variables
+        !!  @param mpi_dir MPI communication coordinate direction
+        !!  @param pbc_loc Processor boundary condition (PBC) location
+    subroutine s_mpi_sendrecv_variables_buffers(q_cons_vf, &
+#ifdef MFC_SIMULATION
+                                                pb, mv, &
+#endif
+                                                mpi_dir, &
+                                                pbc_loc)
+
+        type(scalar_field), dimension(sys_size), intent(inout) :: q_cons_vf
+#ifdef MFC_SIMULATION
+        real(kind(0d0)), dimension(startx:, starty:, startz:, 1:, 1:), intent(inout) :: pb, mv
+#endif
+        integer, intent(in) :: mpi_dir, pbc_loc
+
+        @:BOUNDARY_CONDITION_INTEGER_DECLARATIONS()
+
+        type(bc_patch_parameters) :: bc
+        
+        integer :: buffer_counts(1:3), buffer_count
+
+        type(int_bounds_info) :: boundary_conditions(1:3)
+        integer :: beg_end(1:2)
+        integer :: dst_proc, src_proc, recv_tag, send_tag
+
+        integer :: pack_offset, unpack_offset
+        real(kind(0d0)), pointer :: p_send, p_recv
+        integer, pointer, dimension(:) :: p_i_send, p_i_recv
+
+        integer :: w, r
+
+#ifdef MFC_MPI
+
+        !$acc update device(v_size)
+
+#ifdef MFC_SIMULATION
+        if (qbmm .and. .not. polytropic) then
+            buffer_counts = (/ &
+                            buff_size*(sys_size + 2*nb*4)*(n + 1)*(p + 1), &
+                            buff_size*(sys_size + 2*nb*4)*(m + 2*buff_size + 1)*(p + 1), &
+                            buff_size*v_size*(m + 2*buff_size + 1)*(n + 2*buff_size + 1) &
+                            /)
+        else
+#endif
+            buffer_counts = (/ &
+                            buff_size*sys_size*(n + 1)*(p + 1), &
+                            buff_size*sys_size*(m + 2*buff_size + 1)*(p + 1), &
+                            buff_size*v_size*(m + 2*buff_size + 1)*(n + 2*buff_size + 1) &
+                            /)
+#ifdef MFC_SIMULATION
+        end if
+#endif
+
+        do w = 1, num_bc_patches
+            bc = patch_bc(w)
+
+            buffer_count = buffer_counts(bc%dir)
+            boundary_conditions = (/bc_x, bc_y, bc_z/)
+            ! FIXME: this is no longer treu with the patch_bc stuff
+            beg_end = (/boundary_conditions(bc%dir)%beg, boundary_conditions(bc%dir)%end/)
+
+            ! Implements:
+            ! pbc_loc  bc_x >= 0 -> [send/recv]_tag  [dst/src]_proc
+            ! -1 (=0)      0            ->     [1,0]       [0,0]      | 0 0 [1,0] [beg,beg]
+            ! -1 (=0)      1            ->     [0,0]       [1,0]      | 0 1 [0,0] [end,beg]
+            ! +1 (=1)      0            ->     [0,1]       [1,1]      | 1 0 [0,1] [end,end]
+            ! +1 (=1)      1            ->     [1,1]       [0,1]      | 1 1 [1,1] [beg,end]
+
+            send_tag = f_logical_to_int(.not. f_xor(bc%type >= 0, bc%loc == 1))
+            recv_tag = f_logical_to_int(bc%loc == 1)
+
+            dst_proc = beg_end(1 + f_logical_to_int(f_xor(bc%loc == 1, bc%type >= 0)))
+            src_proc = beg_end(1 + f_logical_to_int(bc%loc == 1))
+
+            #:block IMPLEMENT_BOUNDARY_CONDITION(inner_loops=[("i", 1, "sys_size")])
+                q_cons_buff_send(pack_idr) = q_cons_vf(i)%sf(pack_idx, pack_idy, pack_idz)
+            #:endblock
+
+#ifdef MFC_SIMULATION
+            if (qbmm .and. .not. polytropic) then
+                #:block IMPLEMENT_BOUNDARY_CONDITION(inner_loops=[("i", "sys_size + 1", "sys_size + 4"), ("q", 1, "nb")])
+                    q_cons_buff_send(pack_idr + (q - 1)*4)        = pb(pack_idx, pack_idy, pack_idz, i - sys_size, q)
+                    q_cons_buff_send(pack_idr + (q - 1)*4 + nb*4) = mv(pack_idx, pack_idy, pack_idz, i - sys_size, q)
+                #:endblock
+            end if
+#endif
+
+            p_send => q_cons_buff_send(0)
+            p_recv => q_cons_buff_recv(0)
+            if (rdma_mpi) then
+                !$acc data attach(p_send, p_recv)
+                !$acc host_data use_device(p_send, p_recv)
+            else
+                !$acc update host(q_cons_buff_send, ib_buff_send)
+            end if
+
+            call MPI_SENDRECV( &
+                p_send, buffer_count, MPI_DOUBLE_PRECISION, dst_proc, send_tag, &
+                p_recv, buffer_count, MPI_DOUBLE_PRECISION, src_proc, recv_tag, &
+                MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+
+            if (rdma_mpi) then
+                !$acc end host_data
+                !$acc end data
+                !$acc wait
+            else
+                !$acc update device(q_cons_buff_recv)
+            end if
+
+            #:block IMPLEMENT_BOUNDARY_CONDITION(inner_loops=[("i", 1, "sys_size")])
+                q_cons_vf(i)%sf(unpack_idx, unpack_idy, unpack_idz) = q_cons_buff_recv(unpack_idr)
+            #:endblock
+
+#ifdef MFC_SIMULATION
+            if (qbmm .and. .not. polytropic) then
+                #:block IMPLEMENT_BOUNDARY_CONDITION(inner_loops=[("i", "sys_size + 1", "sys_size + 4"), ("q", 1, "nb")])
+                    pb(unpack_idx, unpack_idy, unpack_idz, i - sys_size, q) = q_cons_buff_recv(unpack_idr + (q - 1)*4)
+                    mv(unpack_idx, unpack_idy, unpack_idz, i - sys_size, q) = q_cons_buff_recv(unpack_idr + (q - 1)*4 + nb*4)
+                #:endblock
+            end if
+#endif
+        end do
+
+#endif
+
+    end subroutine s_mpi_sendrecv_variables_buffers
+#endif
+
+    subroutine s_prohibit_abort(condition, message)
+        character(len=*), intent(in) :: condition, message
+
+        print *, ""
+        print *, "===================================================================================================="
+        print *, "                                          CASE FILE ERROR                                           "
+        print *, "----------------------------------------------------------------------------------------------------"
+        print *, "Prohibited condition: ", trim(condition)
+        if (len_trim(message) > 0) then
+            print *, "Note: ", trim(message)
+        end if
+        print *, "===================================================================================================="
+        print *, ""
+        call s_mpi_abort
+    end subroutine s_prohibit_abort
 
 end module m_mpi_common

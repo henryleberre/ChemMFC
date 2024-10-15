@@ -20,6 +20,8 @@ module m_global_parameters
 
     use m_thermochem            ! Thermodynamic and chemical properties
 
+    use m_global_parameters_common
+
     ! ==========================================================================
 
     implicit none
@@ -92,6 +94,8 @@ module m_global_parameters
     logical :: hypoelasticity        !< activate hypoelasticity
     logical, parameter :: chemistry = .${chemistry}$. !< Chemistry modeling
 
+    logical :: rdma_mpi              !< Use RDMA for MPI communication
+
     ! Annotations of the structure, i.e. the organization, of the state vectors
     type(int_bounds_info) :: cont_idx              !< Indexes of first & last continuity eqns.
     type(int_bounds_info) :: mom_idx               !< Indexes of first & last momentum eqns.
@@ -109,6 +113,8 @@ module m_global_parameters
     type(int_bounds_info) :: temperature_idx       !< Indexes of first & last temperature eqns.
 
     type(int_bounds_info) :: bc_x, bc_y, bc_z !<
+    integer :: num_bc_patches
+    type(bc_patch_parameters) :: patch_bc(num_bc_patches_max)
     !! Boundary conditions in the x-, y- and z-coordinate directions
 
     logical :: parallel_io !< Format of the data files
@@ -298,6 +304,7 @@ contains
         weno_order = dflt_int
 
         hypoelasticity = .false.
+        rdma_mpi = .false.
 
         bc_x%beg = dflt_int; bc_x%end = dflt_int
         bc_y%beg = dflt_int; bc_y%end = dflt_int
@@ -374,6 +381,8 @@ contains
                 patch_icpp(i)%Y(:) = 0d0
             end if
         end do
+
+        call s_bc_assign_default_values_to_user_inputs(num_bc_patches, patch_bc)
 
         ! Tait EOS
         rhoref = dflt_real
