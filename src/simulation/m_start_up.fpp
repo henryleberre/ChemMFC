@@ -78,6 +78,8 @@ module m_start_up
     use m_surface_tension
 
     use m_body_forces
+
+    use m_boundary_conditions
     ! ==========================================================================
 
     implicit none
@@ -139,6 +141,7 @@ contains
             teno_CT, mp_weno, weno_avg, &
             riemann_solver, low_Mach, wave_speeds, avg_state, &
             bc_x, bc_y, bc_z, &
+            num_bc_patches, patch_bc, &
             x_domain, y_domain, z_domain, &
             hypoelasticity, &
             ib, num_ibs, patch_ib, &
@@ -1290,6 +1293,7 @@ contains
 
     subroutine s_initialize_modules
         call s_initialize_global_parameters_module()
+        call s_initialize_boundary_conditions_module()
         !Quadrature weights and nodes for polydisperse simulations
         if (bubbles .and. nb > 1 .and. R0_type == 1) then
             call s_simpson

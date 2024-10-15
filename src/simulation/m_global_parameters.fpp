@@ -22,6 +22,8 @@ module m_global_parameters
 
     use m_helper_basic         !< Functions to compare floating point numbers
 
+    use m_global_parameters_common
+
 #ifdef MFC_OpenACC
     use openacc
 #endif
@@ -191,6 +193,8 @@ module m_global_parameters
     !> @name Boundary conditions (BC) in the x-, y- and z-directions, respectively
     !> @{
     type(int_bounds_info) :: bc_x, bc_y, bc_z
+    integer :: num_bc_patches
+    type(bc_patch_parameters) :: patch_bc(num_bc_patches_max)
     !> @}
     type(bounds_info) :: x_domain, y_domain, z_domain
 
@@ -571,6 +575,8 @@ contains
         x_domain%beg = dflt_int; x_domain%end = dflt_int
         y_domain%beg = dflt_int; y_domain%end = dflt_int
         z_domain%beg = dflt_int; z_domain%end = dflt_int
+
+        call s_bc_assign_default_values_to_user_inputs(num_bc_patches, patch_bc)
 
         ! Fluids physical parameters
         do i = 1, num_fluids_max

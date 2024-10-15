@@ -14,13 +14,17 @@ module m_boundary_conditions
     use m_mpi_proxy
 
     use m_constants
+
+    use m_boundary_conditions_common
+
     ! ==========================================================================
 
     implicit none
 
     private; 
     public :: s_populate_variables_buffers, &
-              s_populate_capillary_buffers
+              s_populate_capillary_buffers, &
+              s_initialize_boundary_conditions_module
 
 contains
 
@@ -606,6 +610,116 @@ contains
         !< =====================================================================
 
     end subroutine s_symmetry
+
+    subroutine s_all_bcs(q_prim_vf, pb, mv, bc_dir, bc_loc)
+
+        type(scalar_field), dimension(sys_size), intent(inout) :: q_prim_vf
+        real(kind(0d0)), dimension(startx:, starty:, startz:, 1:, 1:), intent(inout) :: pb, mv
+        integer, intent(in) :: bc_dir, bc_loc
+
+        !< x-direction =========================================================
+        if (bc_dir == 1) then
+
+            if (bc_loc == -1) then !< bc_x%beg
+
+                !$acc parallel loop collapse(4) gang vector default(present)
+                do i = 1, sys_size
+                    do l = 0, p
+                        do k = 0, n
+                            do j = 1, buff_size
+                                q_prim_vf(i)%sf(-j, k, l) = &
+                                    q_prim_vf(i)%sf(m - (j - 1), k, l)
+                            end do
+                        end do
+                    end do
+                end do
+
+            else !< bc_x%end
+
+                !$acc parallel loop collapse(4) gang vector default(present)
+                do i = 1, sys_size
+                    do l = 0, p
+                        do k = 0, n
+                            do j = 1, buff_size
+                                q_prim_vf(i)%sf(m + j, k, l) = &
+                                    q_prim_vf(i)%sf(j - 1, k, l)
+                            end do
+                        end do
+                    end do
+                end do
+
+            end if
+
+            !< y-direction =========================================================
+        elseif (bc_dir == 2) then
+
+            if (bc_loc == -1) then !< bc_y%beg
+
+                !$acc parallel loop collapse(4) gang vector default(present)
+                do i = 1, sys_size
+                    do k = 0, p
+                        do j = 1, buff_size
+                            do l = -buff_size, m + buff_size
+                                q_prim_vf(i)%sf(l, -j, k) = &
+                                    q_prim_vf(i)%sf(l, n - (j - 1), k)
+                            end do
+                        end do
+                    end do
+                end do
+
+            else !< bc_y%end
+
+                !$acc parallel loop collapse(4) gang vector default(present)
+                do i = 1, sys_size
+                    do k = 0, p
+                        do j = 1, buff_size
+                            do l = -buff_size, m + buff_size
+                                q_prim_vf(i)%sf(l, n + j, k) = &
+                                    q_prim_vf(i)%sf(l, j - 1, k)
+                            end do
+                        end do
+                    end do
+                end do
+
+            end if
+
+            !< z-direction =========================================================
+        elseif (bc_dir == 3) then
+
+            if (bc_loc == -1) then !< bc_z%beg
+
+                !$acc parallel loop collapse(4) gang vector default(present)
+                do i = 1, sys_size
+                    do j = 1, buff_size
+                        do l = -buff_size, n + buff_size
+                            do k = -buff_size, m + buff_size
+                                q_prim_vf(i)%sf(k, l, -j) = &
+                                    q_prim_vf(i)%sf(k, l, p - (j - 1))
+                            end do
+                        end do
+                    end do
+                end do
+
+            else !< bc_z%end
+
+                !$acc parallel loop collapse(4) gang vector default(present)
+                do i = 1, sys_size
+                    do j = 1, buff_size
+                        do l = -buff_size, n + buff_size
+                            do k = -buff_size, m + buff_size
+                                q_prim_vf(i)%sf(k, l, p + j) = &
+                                    q_prim_vf(i)%sf(k, l, j - 1)
+                            end do
+                        end do
+                    end do
+                end do
+
+            end if
+
+        end if
+        !< =====================================================================
+
+    end subroutine s_all_bcs
 
     subroutine s_periodic(q_prim_vf, pb, mv, bc_dir, bc_loc)
 

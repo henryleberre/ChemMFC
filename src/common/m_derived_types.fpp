@@ -316,4 +316,19 @@ module m_derived_types
         logical :: reactions
     end type chemistry_parameters
 
+    type bc_patch_parameters
+        ! User inputs
+        integer :: geometry
+        integer :: type
+        real(kind(0d0)) :: radius
+        real(kind(0d0)) :: length(1:3)
+        real(kind(0d0)) :: centroid(1:3)
+
+        integer :: dir !  [x,y,z]  => [1,2,3]
+        integer :: loc ! [beg,end] => [-1,+1]
+
+        ! Not meant to be passed by user
+        integer, dimension(2) :: grid_extents(3)
+    end type bc_patch_parameters
+
 end module m_derived_types
