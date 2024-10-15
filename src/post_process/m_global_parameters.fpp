@@ -20,6 +20,8 @@ module m_global_parameters
 
     use m_thermochem            !< Thermodynamic and chemical properties module
 
+    use m_global_parameters_common
+
     ! ==========================================================================
 
     implicit none
@@ -133,6 +135,9 @@ module m_global_parameters
     !> @name Boundary conditions in the x-, y- and z-coordinate directions
     !> @{
     type(int_bounds_info) :: bc_x, bc_y, bc_z
+    integer :: num_bc_patches
+    type(bc_patch_parameters) :: patch_bc(num_bc_patches_max)
+    type(bounds_info) :: x_domain, y_domain, z_domain
     !> @}
 
     logical :: parallel_io    !< Format of the data files
@@ -328,6 +333,8 @@ contains
                 bc_${DIM}$%ve${DIR}$ = 0d0
             #:endfor
         #:endfor
+
+        call s_bc_assign_default_values_to_user_inputs(num_bc_patches, patch_bc)
 
         ! Fluids physical parameters
         do i = 1, num_fluids_max

@@ -316,4 +316,15 @@ module m_derived_types
         logical :: reactions
     end type chemistry_parameters
 
+    type bc_patch_parameters
+        ! User inputs
+        integer :: geometry
+        integer :: type
+        real(kind(0d0)), dimension(1:3) :: vel
+
+        integer :: dir !  [x,y,z]  => [1,2,3]
+        integer :: loc ! [beg,end] => [-1,+1]
+
+    end type bc_patch_parameters
+
 end module m_derived_types

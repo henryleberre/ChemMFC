@@ -50,6 +50,8 @@ module m_start_up
     use m_checker_common
 
     use m_checker
+
+    use m_boundary_conditions_common
     ! ==========================================================================
 
     implicit none
@@ -128,7 +130,7 @@ contains
             stretch_x, stretch_y, stretch_z, a_x, a_y, &
             a_z, x_a, y_a, z_a, x_b, y_b, z_b, &
             model_eqns, num_fluids, mpp_lim, &
-            weno_order, bc_x, bc_y, bc_z, num_patches, &
+            weno_order, bc_x, bc_y, bc_z, patch_bc, num_patches, num_bc_patches, &
             hypoelasticity, patch_icpp, fluid_pp, precision, parallel_io, &
             mixlayer_vel_profile, mixlayer_vel_coef, mixlayer_domain, &
             mixlayer_perturb, &
@@ -767,6 +769,8 @@ contains
         ! Computation of parameters, allocation procedures, and/or any other tasks
         ! needed to properly setup the modules
         call s_initialize_global_parameters_module()
+        call s_initialize_boundary_conditions_module()
+
         !Quadrature weights and nodes for polydisperse simulations
         if (bubbles .and. nb > 1) then
             call s_simpson

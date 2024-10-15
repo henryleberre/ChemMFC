@@ -40,6 +40,8 @@ module m_start_up
 
     use m_finite_differences
 
+    use m_boundary_conditions_common
+
     ! ==========================================================================
 
     implicit none
@@ -67,8 +69,11 @@ contains
         namelist /user_inputs/ case_dir, m, n, p, t_step_start, &
             t_step_stop, t_step_save, model_eqns, &
             num_fluids, mpp_lim, &
-            weno_order, bc_x, &
-            bc_y, bc_z, fluid_pp, format, precision, &
+            weno_order, &
+            bc_x, bc_y, bc_z, &
+            num_bc_patches, patch_bc, &
+            x_domain, y_domain, z_domain, &
+            fluid_pp, format, precision, &
             hypoelasticity, G, &
             chem_wrt_Y, chem_wrt_T, &
             alpha_rho_wrt, rho_wrt, mom_wrt, vel_wrt, &
@@ -667,6 +672,7 @@ contains
         ! Computation of parameters, allocation procedures, and/or any other tasks
         ! needed to properly setup the modules
         call s_initialize_global_parameters_module()
+        call s_initialize_boundary_conditions_module()
         if (bubbles .and. nb > 1) then
             call s_simpson
         end if

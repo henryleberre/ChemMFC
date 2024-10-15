@@ -516,243 +516,85 @@ contains
         !!      conditions are present.
     subroutine s_populate_grid_variables_buffer_regions
 
-        integer :: i !< Generic loop iterator
+        integer :: i, k !< Generic loop iterator
 
-        ! Populating Buffer Regions in the x-direction =====================
-
-        ! Ghost-cell extrapolation BC at the beginning
-        if (bc_x%beg <= -3) then
-
-            do i = 1, buff_size
-                dx(-i) = dx(0)
+        #:for cmp, size in [('x', 'm'), ('y', 'n'), ('z', 'p')]
+        if (${size}$ > 0) then
+            do i = 1, offset_${cmp}$%beg
+                ${cmp}$_cb(-1 - i) = ${cmp}$_cb(-i) - d${cmp}$(-i)
             end do
 
-            ! Symmetry BC at the beginning
-        elseif (bc_x%beg == -2) then
-
             do i = 1, buff_size
-                dx(-i) = dx(i - 1)
+                ${cmp}$_cc(-i) = ${cmp}$_cc(1 - i) - (d${cmp}$(1 - i) + d${cmp}$(-i))/2d0
             end do
 
-            ! Periodic BC at the beginning
-        elseif (bc_x%beg == -1) then
-
-            do i = 1, buff_size
-                dx(-i) = dx((m + 1) - i)
+            do i = 1, offset_${cmp}$%end
+                ${cmp}$_cb(${size}$ + i) = ${cmp}$_cb(${size}$ + (i - 1)) + d${cmp}$(${size}$ + i)
             end do
 
-            ! Processor BC at the beginning
-        else
-
-            call s_mpi_sendrecv_grid_vars_buffer_regions('beg', 'x')
-
+            do i = 1, buff_size
+                ${cmp}$_cc(${size}$ + i) = ${cmp}$_cc(${size}$ + (i - 1)) + (d${cmp}$(${size}$ + (i - 1)) + d${cmp}$(${size}$ + i))/2d0
+            end do
         end if
+        #:endfor
 
-        do i = 1, offset_x%beg
-            x_cb(-1 - i) = x_cb(-i) - dx(-i)
-        end do
+        do k = 1, num_bc_patches
 
-        do i = 1, buff_size
-            x_cc(-i) = x_cc(1 - i) - (dx(1 - i) + dx(-i))/2d0
-        end do
+            #:for dir, cmp, size in [(1, 'x', 'm'), (2, 'y', 'n'), (3, 'z', 'p')]
+            if (${size}$ > 0 .and. patch_bc(k)%dir == ${dir}$) then
 
-        ! Ghost-cell extrapolation BC at the end
-        if (bc_x%end <= -3) then
-
-            do i = 1, buff_size
-                dx(m + i) = dx(m)
-            end do
-
-            ! Symmetry BC at the end
-        elseif (bc_x%end == -2) then
-
-            do i = 1, buff_size
-                dx(m + i) = dx((m + 1) - i)
-            end do
-
-            ! Periodic BC at the end
-        elseif (bc_x%end == -1) then
-
-            do i = 1, buff_size
-                dx(m + i) = dx(i - 1)
-            end do
-
-            ! Processor BC at the end
-        else
-
-            call s_mpi_sendrecv_grid_vars_buffer_regions('end', 'x')
-
-        end if
-
-        do i = 1, offset_x%end
-            x_cb(m + i) = x_cb(m + (i - 1)) + dx(m + i)
-        end do
-
-        do i = 1, buff_size
-            x_cc(m + i) = x_cc(m + (i - 1)) + (dx(m + (i - 1)) + dx(m + i))/2d0
-        end do
-
-        ! END: Populating Buffer Regions in the x-direction ================
-
-        ! Populating Buffer Regions in the y-direction =====================
-
-        if (n > 0) then
-
-            ! Ghost-cell extrapolation BC at the beginning
-            if (bc_y%beg <= -3 .and. bc_y%beg /= -14) then
-
-                do i = 1, buff_size
-                    dy(-i) = dy(0)
-                end do
-
-                ! Symmetry BC at the beginning
-            elseif (bc_y%beg == -2 .or. bc_y%beg == -14) then
-
-                do i = 1, buff_size
-                    dy(-i) = dy(i - 1)
-                end do
-
-                ! Periodic BC at the beginning
-            elseif (bc_y%beg == -1) then
-
-                do i = 1, buff_size
-                    dy(-i) = dy((n + 1) - i)
-                end do
-
-                ! Processor BC at the beginning
-            else
-
-                call s_mpi_sendrecv_grid_vars_buffer_regions('beg', 'y')
-
-            end if
-
-            do i = 1, offset_y%beg
-                y_cb(-1 - i) = y_cb(-i) - dy(-i)
-            end do
-
-            do i = 1, buff_size
-                y_cc(-i) = y_cc(1 - i) - (dy(1 - i) + dy(-i))/2d0
-            end do
-
-            ! Ghost-cell extrapolation BC at the end
-            if (bc_y%end <= -3) then
-
-                do i = 1, buff_size
-                    dy(n + i) = dy(n)
-                end do
-
-                ! Symmetry BC at the end
-            elseif (bc_y%end == -2) then
-
-                do i = 1, buff_size
-                    dy(n + i) = dy((n + 1) - i)
-                end do
-
-                ! Periodic BC at the end
-            elseif (bc_y%end == -1) then
-
-                do i = 1, buff_size
-                    dy(n + i) = dy(i - 1)
-                end do
-
-                ! Processor BC at the end
-            else
-
-                call s_mpi_sendrecv_grid_vars_buffer_regions('end', 'y')
-
-            end if
-
-            do i = 1, offset_y%end
-                y_cb(n + i) = y_cb(n + (i - 1)) + dy(n + i)
-            end do
-
-            do i = 1, buff_size
-                y_cc(n + i) = y_cc(n + (i - 1)) + (dy(n + (i - 1)) + dy(n + i))/2d0
-            end do
-
-            ! END: Populating Buffer Regions in the y-direction ================
-
-            ! Populating Buffer Regions in the z-direction =====================
-
-            if (p > 0) then
-
-                ! Ghost-cell extrapolation BC at the beginning
-                if (bc_z%beg <= -3) then
+                if (patch_bc(k)%type <= -3) then
 
                     do i = 1, buff_size
-                        dz(-i) = dz(0)
+                        d${cmp}$(-i) = d${cmp}$(0)
                     end do
 
-                    ! Symmetry BC at the beginning
-                elseif (bc_z%beg == -2) then
+                elseif (patch_bc(k)%type == -2) then
 
                     do i = 1, buff_size
-                        dz(-i) = dz(i - 1)
+                        d${cmp}$(-i) = d${cmp}$(i - 1)
                     end do
 
-                    ! Periodic BC at the beginning
-                elseif (bc_z%beg == -1) then
+                elseif (patch_bc(k)%type == -1) then
 
                     do i = 1, buff_size
-                        dz(-i) = dz((p + 1) - i)
+                        d${cmp}$(-i) = d${cmp}$((${size}$ + 1) - i)
                     end do
 
-                    ! Processor BC at the beginning
                 else
 
-                    call s_mpi_sendrecv_grid_vars_buffer_regions('beg', 'z')
+                    call s_mpi_sendrecv_grid_vars_buffer_regions('beg', '${cmp}$')
 
                 end if
 
-                do i = 1, offset_z%beg
-                    z_cb(-1 - i) = z_cb(-i) - dz(-i)
-                end do
-
-                do i = 1, buff_size
-                    z_cc(-i) = z_cc(1 - i) - (dz(1 - i) + dz(-i))/2d0
-                end do
-
-                ! Ghost-cell extrapolation BC at the end
-                if (bc_z%end <= -3) then
+                if (patch_bc(k)%type <= -3) then
 
                     do i = 1, buff_size
-                        dz(p + i) = dz(p)
+                        d${cmp}$(${size}$ + i) = d${cmp}$(m)
                     end do
 
-                    ! Symmetry BC at the end
-                elseif (bc_z%end == -2) then
+                elseif (patch_bc(k)%type == -2) then
 
                     do i = 1, buff_size
-                        dz(p + i) = dz((p + 1) - i)
+                        d${cmp}$(${size}$ + i) = d${cmp}$((${size}$ + 1) - i)
                     end do
 
-                    ! Periodic BC at the end
-                elseif (bc_z%end == -1) then
+                elseif (patch_bc(k)%type == -1) then
 
                     do i = 1, buff_size
-                        dz(p + i) = dz(i - 1)
+                        d${cmp}$(${size}$ + i) = d${cmp}$(i - 1)
                     end do
 
-                    ! Processor BC at the end
                 else
 
-                    call s_mpi_sendrecv_grid_vars_buffer_regions('end', 'z')
+                    call s_mpi_sendrecv_grid_vars_buffer_regions('end', '${cmp}$')
 
                 end if
 
-                do i = 1, offset_z%end
-                    z_cb(p + i) = z_cb(p + (i - 1)) + dz(p + i)
-                end do
-
-                do i = 1, buff_size
-                    z_cc(p + i) = z_cc(p + (i - 1)) + (dz(p + (i - 1)) + dz(p + i))/2d0
-                end do
-
             end if
+            #:endfor
 
-        end if
-
-        ! END: Populating Buffer Regions in the z-direction ================
+        end do
 
     end subroutine s_populate_grid_variables_buffer_regions
 

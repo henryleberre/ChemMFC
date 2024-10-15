@@ -20,6 +20,8 @@ module m_global_parameters
 
     use m_thermochem            ! Thermodynamic and chemical properties
 
+    use m_global_parameters_common
+
     ! ==========================================================================
 
     implicit none
@@ -109,6 +111,8 @@ module m_global_parameters
     type(int_bounds_info) :: temperature_idx       !< Indexes of first & last temperature eqns.
 
     type(int_bounds_info) :: bc_x, bc_y, bc_z !<
+    integer :: num_bc_patches
+    type(bc_patch_parameters) :: patch_bc(num_bc_patches_max)
     !! Boundary conditions in the x-, y- and z-coordinate directions
 
     logical :: parallel_io !< Format of the data files
@@ -374,6 +378,8 @@ contains
                 patch_icpp(i)%Y(:) = 0d0
             end if
         end do
+
+        call s_bc_assign_default_values_to_user_inputs(num_bc_patches, patch_bc)
 
         ! Tait EOS
         rhoref = dflt_real
