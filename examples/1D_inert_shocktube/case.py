@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # References:
-# + https://doi.org/10.1006/jcph.1996.5622:          4.1. Separating Box Problem
 # + https://doi.org/10.1016/j.compfluid.2013.10.014: 4.3. Multi-component inert shock tube
 
 import json
