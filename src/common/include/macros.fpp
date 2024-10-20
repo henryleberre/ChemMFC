@@ -337,7 +337,11 @@ end subroutine s_apply_${name}$_boundary_condition
 abstract interface
     #:block DEFINE_BOUNDARY_CONDITION_ROUTINE_STRUCT(name=name)
 
-        import :: scalar_field, sys_size, startx, starty, startz, bc_patch_parameters
+        import :: scalar_field, sys_size, bc_patch_parameters
+
+#ifdef MFC_SIMULATION
+        import :: startx, starty, startz,
+#endif
 
         @:BOUNDARY_CONDITION_INTENT_DECLARATIONS()
         @:BOUNDARY_CONDITION_INTEGER_DECLARATIONS()

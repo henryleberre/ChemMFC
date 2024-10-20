@@ -111,6 +111,7 @@ module m_global_parameters
     logical :: mixture_err     !< Mixture error limiter
     logical :: alt_soundspeed  !< Alternate sound speed
     logical :: hypoelasticity  !< Turn hypoelasticity on
+    logical :: rdma_mpi        !< Turn on RDMA for MPI
     logical, parameter :: chemistry = .${chemistry}$. !< Chemistry modeling
     !> @}
 
@@ -322,6 +323,7 @@ contains
         relax = .false.
         relax_model = dflt_int
         hypoelasticity = .false.
+        rdma_mpi = .false.
 
         bc_x%beg = dflt_int; bc_x%end = dflt_int
         bc_y%beg = dflt_int; bc_y%end = dflt_int

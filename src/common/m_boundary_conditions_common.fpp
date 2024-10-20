@@ -11,7 +11,7 @@ module m_boundary_conditions_common
     private; public :: s_initialize_boundary_conditions_module
 
 #ifndef MFC_PRE_PROCESS
-    public :: s_populate_prim_buffers
+    public :: s_populate_prim_buffers, s_populate_cons_buffers
 
     @:DEFINE_BOUNDARY_CONDITION_INTERFACE(name=xxx)
 #endif
@@ -77,9 +77,9 @@ module m_boundary_conditions_common
     !>  The purpose of this procedure is to populate the buffers
     !!      of the primitive variables, depending on the selected
     !!      boundary conditions.
-    subroutine s_populate_prim_buffers(q_prim_vf,&
+    subroutine s_populate_prim_buffers(q_prim_vf&
 #ifdef MFC_SIMULATION
-pb, mv &
+, pb, mv &
 #endif
 )
 
@@ -105,7 +105,11 @@ pb, mv &
             case (-16);    s_apply_boundary_condition => s_apply_no_slip_wall_boundary_condition
             case default ! Processor BC at beginning
                 call s_mpi_sendrecv_variables_buffers( &
-                    q_prim_vf, pb, mv, patch_bc(i)%dir, patch_bc(i)%loc)
+                    q_prim_vf, &
+#ifdef MFC_SIMULATION
+                    pb, mv, &
+#endif
+                    patch_bc(i)%dir, patch_bc(i)%loc)
             end select
 
             if (associated(s_apply_boundary_condition)) then
@@ -127,6 +131,28 @@ pb, mv &
         end do
 
     end subroutine s_populate_prim_buffers
+
+        !>  The purpose of this procedure is to populate the buffers
+    !!      of the conservative variables, depending on the selected
+    !!      boundary conditions.
+    subroutine s_populate_cons_buffers(q_cons_vf &
+#ifdef MFC_SIMULATION
+, pb, mv &
+#endif
+)
+
+        type(scalar_field), dimension(sys_size), intent(inout) :: q_cons_vf
+#ifdef MFC_SIMULATION
+        real(kind(0d0)), dimension(startx:, starty:, startz:, 1:, 1:), intent(inout) :: pb, mv
+#endif
+
+        call s_populate_prim_buffers(q_cons_vf &
+#ifdef MFC_SIMULATION
+, pb, mv &
+#endif
+)
+
+    end subroutine s_populate_cons_buffers
 #endif
 
 #ifndef MFC_PRE_PROCESS

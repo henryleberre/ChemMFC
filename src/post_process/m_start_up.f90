@@ -74,7 +74,7 @@ contains
             num_bc_patches, patch_bc, &
             x_domain, y_domain, z_domain, &
             fluid_pp, format, precision, &
-            hypoelasticity, G, &
+            hypoelasticity, rdma_mpi, G, &
             chem_wrt_Y, chem_wrt_T, &
             alpha_rho_wrt, rho_wrt, mom_wrt, vel_wrt, &
             E_wrt, pres_wrt, alpha_wrt, gamma_wrt, &
@@ -181,7 +181,7 @@ contains
 
         ! Populating the buffer regions of the conservative variables
         if (buff_size > 0) then
-            call s_populate_conservative_variables_buffer_regions()
+            call s_populate_cons_buffers(q_cons_vf)
         end if
 
         ! Converting the conservative variables to the primitive ones
@@ -679,7 +679,10 @@ contains
         if (bubbles .and. .not. polytropic) then
             call s_initialize_nonpoly()
         end if
-        if (num_procs > 1) call s_initialize_mpi_proxy_module()
+        if (num_procs > 1) then
+            call s_initialize_mpi_common_module()
+            call s_initialize_mpi_proxy_module()
+        end if
         call s_initialize_variables_conversion_module()
         call s_initialize_data_input_module()
         call s_initialize_derived_variables_module()
