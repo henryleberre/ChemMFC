@@ -43,11 +43,11 @@ contains
             bc = patch_bc(r)
 
             if (bc%type <= -3) then !< ghost cell extrapolation
-                #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "num_dims + 1")])
+                #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "num_dims + 1")])
                     c_divs(i)%sf(x, y, z) = c_divs(i)%sf(ex, ey, ez)
                 #:endblock
             elseif (bc%type == -2) then !< slip wall or reflective
-                #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "num_dims + 1")])
+                #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "num_dims + 1")])
                     if (i == 1) then
                         c_divs(i)%sf(x, y, z) = -c_divs(i)%sf(sx, sy, sz)
                     else
@@ -55,7 +55,7 @@ contains
                     end if
                 #:endblock
             elseif (bc%type == -1) then
-                #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "num_dims + 1")])
+                #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "num_dims + 1")])
                     c_divs(i)%sf(x, y, z) = c_divs(i)%sf(px, py, pz)
                 #:endblock
             else

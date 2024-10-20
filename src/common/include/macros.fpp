@@ -158,8 +158,8 @@
 #:enddef
 
 
-#:def _WRAP_i_LOOP(impl, loops = None)
-    !$acc parallel loop collapse(${3 + len(loops or [])}$) gang vector default(present) private(x, y, z, sx, sy, sz, px, py, pz, ex, ey, ez, packed_idr, internal_pack_offset, nopack_idx, nopack_idy, nopack_idz, internal_unpack_offset)
+#:def _WRAP_i_LOOP(impl, loops)
+    !$acc parallel loop collapse(${len(loops)}$) gang vector default(present) private(x, y, z, sx, sy, sz, px, py, pz, ex, ey, ez, packed_idr, internal_pack_offset, nopack_idx, nopack_idy, nopack_idz, internal_unpack_offset)
     #:for index, lbound, hbound in (loops or [])
         do ${index}$ = ${lbound}$, ${hbound}$
     #:endfor
@@ -171,7 +171,7 @@
     #:endfor
 #:enddef
 
-#:def IMPLEMENT_BOUNDARY_CONDITION(impl, loops = None)
+#:def IMPLEMENT_BOUNDARY_CONDITION(impl, outer_loops = None, inner_loops = None)
     internal_pack_offset = 0
     block
         integer, dimension(1:3) :: grid_dims
@@ -190,46 +190,32 @@
 
         if (bc%loc == -1) then
 
-            #:block _WRAP_i_LOOP(loops = loops)
-                do l = 0, p
-                    do k = 0, n
-                        do j = 1, buff_size
-                             x = -j;           y = k;  z = l ! Regular
-                            sx = j - 1;       sy = k; sz = l ! Symmetry
-                            px = m - (j - 1); py = k; pz = l ! Periodic
-                            ex = 0;           ey = k; ez = l ! Extrapolation
+            #:block _WRAP_i_LOOP(loops = (outer_loops or []) + [("l", 0, "p"), ("k", 0, "n"), ("j", 1, "buff_size")] + (inner_loops or []))
+                 x = -j;           y = k;  z = l ! Regular
+                sx = j - 1;       sy = k; sz = l ! Symmetry
+                px = m - (j - 1); py = k; pz = l ! Periodic
+                ex = 0;           ey = k; ez = l ! Extrapolation
 
-                            packed_idr = (i - 1) + v_size*((j - 1) + buff_size*(k + (n + 1)*l))
-                            nopack_idx = j + internal_pack_offset; nopack_idy = k; nopack_idz = l
+                packed_idr = (i - 1) + v_size*((j - 1) + buff_size*(k + (n + 1)*l))
+                nopack_idx = j + internal_pack_offset; nopack_idy = k; nopack_idz = l
 
-                            $:impl
-                        end do
-                    end do
-                end do
+                $:impl
             #:endblock
 
         else
 
-            #:block _WRAP_i_LOOP(loops = loops)
-                do l = 0, p
-                    do k = 0, n
-                        do j = 1, buff_size
+            #:block _WRAP_i_LOOP(loops = (outer_loops or []) + [("l", 0, "p"), ("k", 0, "n"), ("j", 1, "buff_size")] + (inner_loops or []))
+                 x = m + j;        y = k;  z = l ! Regular
+                sx = m - (j - 1); sy = k; sz = l ! Symmetry
+                px = j - 1;       py = k; pz = l ! Periodic
+                ex = m;           ey = k; ez = l ! Extrapolation
 
-                             x = m + j;        y = k;  z = l ! Regular
-                            sx = m - (j - 1); sy = k; sz = l ! Symmetry
-                            px = j - 1;       py = k; pz = l ! Periodic
-                            ex = m;           ey = k; ez = l ! Extrapolation
+                packed_idr = (i - 1) + v_size*((j - 1) + buff_size*(k + (n + 1)*l))
+                nopack_idx = j + internal_pack_offset; nopack_idy = k; nopack_idz = l
 
-                            packed_idr = (i - 1) + v_size*((j - 1) + buff_size*(k + (n + 1)*l))
-                            nopack_idx = j + internal_pack_offset; nopack_idy = k; nopack_idz = l
+                ! packed_idr = (i - 1) + v_size*((j - 1) + buff_size*((k + 1) + (n + 1)*l))
 
-                            ! packed_idr = (i - 1) + v_size*((j - 1) + buff_size*((k + 1) + (n + 1)*l))
-
-                            $:impl
-
-                        end do
-                    end do
-                end do
+                $:impl
             #:endblock
 
         end if
@@ -239,36 +225,24 @@
 
         if (bc%loc == -1) then
 
-            #:block _WRAP_i_LOOP(loops = loops)
-                do k = 0, p
-                    do j = 1, buff_size
-                        do l = -buff_size, m + buff_size
-                             x = l;  y = -j;           z = k ! Regular
-                            sx = l; sy = j - 1;       sz = k ! Symmetry
-                            px = l; py = n - (j - 1); pz = k ! Periodic
-                            ex = l; ey = 0;           ez = k ! Extrapolation
+            #:block _WRAP_i_LOOP(loops = (outer_loops or []) + [("k", 0, "p"), ("j", 1, "buff_size"), ("l", "-buff_size", "m + buff_size")] + (inner_loops or []))
+                 x = l;  y = -j;           z = k ! Regular
+                sx = l; sy = j - 1;       sz = k ! Symmetry
+                px = l; py = n - (j - 1); pz = k ! Periodic
+                ex = l; ey = 0;           ez = k ! Extrapolation
 
-                            $:impl
-                        end do
-                    end do
-                end do
+                $:impl
             #:endblock
 
         else
 
-            #:block _WRAP_i_LOOP(loops = loops)
-                do k = 0, p
-                    do j = 1, buff_size
-                        do l = -buff_size, m + buff_size
-                             x = l; y  = n + j;        z = k ! Regular
-                            sx = l; sy = n - (j - 1); sz = k ! Symmetry
-                            px = l; py = j - 1;       pz = k ! Periodic
-                            ex = l; ey = n;           ez = k ! Extrapolation
+            #:block _WRAP_i_LOOP(loops = (outer_loops or []) + [("k", 0, "p"), ("j", 1, "buff_size"), ("l", "-buff_size", "m + buff_size")] + (inner_loops or []))
+                 x = l; y  = n + j;        z = k ! Regular
+                sx = l; sy = n - (j - 1); sz = k ! Symmetry
+                px = l; py = j - 1;       pz = k ! Periodic
+                ex = l; ey = n;           ez = k ! Extrapolation
 
-                            $:impl
-                        end do
-                    end do
-                end do
+                $:impl
             #:endblock
 
         end if
@@ -278,36 +252,24 @@
 
         if (bc%loc == -1) then
 
-            #:block _WRAP_i_LOOP(loops = loops)
-                do j = 1, buff_size
-                    do l = -buff_size, n + buff_size
-                        do k = -buff_size, m + buff_size
-                             x = k;  y = l;  z = -j          ! Regular
-                            sx = k; sy = l; sz = j - 1       ! Symmetry
-                            px = k; py = l; pz = p - (j - 1) ! Periodic
-                            ex = k; ey = l; ez = 0           ! Extrapolation
+            #:block _WRAP_i_LOOP(loops = (outer_loops or []) + [("j", 1, "buff_size"), ("l", "-buff_size", "n + buff_size"), ("k", "-buff_size", "m + buff_size")] + (inner_loops or []))
+                 x = k;  y = l;  z = -j          ! Regular
+                sx = k; sy = l; sz = j - 1       ! Symmetry
+                px = k; py = l; pz = p - (j - 1) ! Periodic
+                ex = k; ey = l; ez = 0           ! Extrapolation
 
-                            $:impl
-                        end do
-                    end do
-                end do
+                $:impl
             #:endblock
 
         else
 
-            #:block _WRAP_i_LOOP(loops = loops)
-                do j = 1, buff_size
-                    do l = -buff_size, n + buff_size
-                        do k = -buff_size, m + buff_size
-                             x = k;  y = l;  z = p + j       ! Regular
-                            sx = k; sy = l; sz = p - (j - 1) ! Symmetry
-                            px = k; py = l; pz = j - 1       ! Periodic
-                            ex = k; ey = l; ez = p           ! Extrapolation
+            #:block _WRAP_i_LOOP(loops = (outer_loops or []) + [("j", 1, "buff_size"), ("l", "-buff_size", "n + buff_size"), ("k", "-buff_size", "m + buff_size")] + (inner_loops or []))
+                 x = k;  y = l;  z = p + j       ! Regular
+                sx = k; sy = l; sz = p - (j - 1) ! Symmetry
+                px = k; py = l; pz = j - 1       ! Periodic
+                ex = k; ey = l; ez = p           ! Extrapolation
 
-                            $:impl
-                        end do
-                    end do
-                end do
+                $:impl
             #:endblock
 
         end if

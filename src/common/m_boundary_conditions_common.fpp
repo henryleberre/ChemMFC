@@ -157,19 +157,19 @@ module m_boundary_conditions_common
 
 #ifndef MFC_PRE_PROCESS
     #:block DEFINE_BOUNDARY_CONDITION(name="ghost_cell_extrapolation")
-        #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "sys_size")])
+        #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "sys_size")])
             q_prim_vf(i)%sf(x, y, z) = q_prim_vf(i)%sf(ex, ey, ez)
         #:endblock
     #:endblock
 
     #:block DEFINE_BOUNDARY_CONDITION(name="periodic")
-        #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "sys_size")])
+        #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "sys_size")])
             q_prim_vf(i)%sf(x, y, z) = q_prim_vf(i)%sf(px, py, pz)
         #:endblock
 
 #ifdef MFC_SIMULATION
         if (qbmm .and. .not. polytropic) then
-            #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "nb"), ("q", 1, "nnode")])
+            #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "nb"), ("q", 1, "nnode")])
                 pb(x, y, z, q, i) = pb(px, py, pz, q, i)
                 mv(x, y, z, q, i) = mv(px, py, pz, q, i)
             #:endblock
@@ -178,22 +178,22 @@ module m_boundary_conditions_common
     #:endblock
 
     #:block DEFINE_BOUNDARY_CONDITION(name="symmetry")
-        #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "momxb + bc%dir - 2")])
+        #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "momxb + bc%dir - 2")])
             q_prim_vf(i)%sf(x, y, z) = q_prim_vf(i)%sf(sx, sy, sz)
         #:endblock
 
-        #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[])
+        #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[])
             q_prim_vf(momxb + bc%dir - 1)%sf(x, y, z) = &
                 -q_prim_vf(momxb + bc%dir - 1)%sf(sx, sy, sz)
         #:endblock
 
-        #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", "momxb + bc%dir", "sys_size")])
+        #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", "momxb + bc%dir", "sys_size")])
             q_prim_vf(i)%sf(x, y, z) = q_prim_vf(i)%sf(sx, sy, sz)
         #:endblock
 
 #ifdef MFC_SIMULATION
         if (qbmm .and. .not. polytropic) then
-            #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "nb"), ("q", 1, "nnode")])
+            #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "nb"), ("q", 1, "nnode")])
                 pb(x, y, z, q, i) = pb(sx, sy, sz, q, i)
                 mv(x, y, z, q, i) = mv(sx, sy, sz, q, i)
             #:endblock
@@ -202,7 +202,7 @@ module m_boundary_conditions_common
     #:endblock
 
     #:block DEFINE_BOUNDARY_CONDITION(name="axis")
-        #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[])
+        #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[])
             if (z_cc(k) < pi) then
                 !$acc loop seq
                 do i = 1, momxb
@@ -243,7 +243,7 @@ module m_boundary_conditions_common
         #:endblock
 
 #ifdef MFC_SIMULATION
-        #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "nb"), ("q", 1, "nnode")])
+        #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "nb"), ("q", 1, "nnode")])
             pb(x, y, z, q, i) = pb(sx, sy, z - ((p + 1)/2), q, i)
             mv(x, y, z, q, i) = mv(sx, sy, z - ((p + 1)/2), q, i)
         #:endblock
@@ -251,7 +251,7 @@ module m_boundary_conditions_common
     #:endblock
 
     #:block DEFINE_BOUNDARY_CONDITION(name="slip_wall")
-        #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "sys_size")])
+        #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "sys_size")])
             if (i == momxb + bc%dir - 1) then
                 q_prim_vf(i)%sf(x, y, z) = &
                     -q_prim_vf(i)%sf(sx, sy, sz) + 2d0 * bc%vel(bc%dir)
@@ -262,7 +262,7 @@ module m_boundary_conditions_common
     #:endblock
 
     #:block DEFINE_BOUNDARY_CONDITION(name="no_slip_wall")
-        #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "sys_size")])
+        #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "sys_size")])
             if (i >= momxb .and. i <= momxe) then
                 q_prim_vf(i)%sf(x, y, z) = &
                     -q_prim_vf(i)%sf(sx, sy, sz) + 2d0 * bc%vel(i - momxb + 1)
@@ -274,7 +274,7 @@ module m_boundary_conditions_common
 
 #ifdef MFC_SIMULATION
     #:block DEFINE_BOUNDARY_CONDITION(name="qbmm_extrapolation")
-        #:block IMPLEMENT_BOUNDARY_CONDITION(loops=[("i", 1, "nb"), ("q", 1, "nnode")])
+        #:block IMPLEMENT_BOUNDARY_CONDITION(outer_loops=[("i", 1, "nb"), ("q", 1, "nnode")])
             pb(x, y, z, q, i) = pb(ex, ey, ez, q, i)
             mv(x, y, z, q, i) = mv(ex, ey, ez, q, i)
         #:endblock
