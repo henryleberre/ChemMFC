@@ -13,7 +13,7 @@ module m_boundary_conditions_common
 #ifndef MFC_PRE_PROCESS
     public :: s_populate_prim_buffers
 
-    @:DEFINE_BOUNDARY_CONDITION_INTERFACE(name=apply_xxx_boundary_condition)
+    @:DEFINE_BOUNDARY_CONDITION_INTERFACE(name=xxx)
 #endif
 
     contains
@@ -88,36 +88,39 @@ pb, mv &
         real(kind(0d0)), dimension(startx:, starty:, startz:, 1:, 1:), intent(inout) :: pb, mv
 #endif
 
+        procedure(s_apply_xxx_boundary_condition), &
+            pointer :: s_apply_boundary_condition => null() 
+
         integer :: i
 
         do i = 1, num_bc_patches
+            s_apply_boundary_condition => null()
+
             select case (patch_bc(i)%type)
-            case (-13:-3) ! Ghost-cell extrap. BC at beginning
-                call s_ghost_cell_extrapolation(q_prim_vf, pb, mv, patch_bc(i))
-            case (-14)    ! Axis BC at beginning
-                call s_axis(q_prim_vf, pb, mv, patch_bc(i))
-            case (-2)     ! Symmetry BC at beginning
-                call s_symmetry(q_prim_vf, pb, mv, patch_bc(i))
-            case (-1)     ! Periodic BC at beginning
-                call s_periodic(q_prim_vf, pb, mv, patch_bc(i))
-            case (-15)    ! Slip wall BC at beginning
-                call s_slip_wall(q_prim_vf, pb, mv, patch_bc(i))
-            case (-16)    ! No-slip wall BC at beginning
-                call s_no_slip_wall(q_prim_vf, pb, mv, patch_bc(i))
+            case (-13:-3); s_apply_boundary_condition => s_apply_ghost_cell_extrapolation_boundary_condition
+            case (-14);    s_apply_boundary_condition => s_apply_axis_boundary_condition
+            case (-2);     s_apply_boundary_condition => s_apply_symmetry_boundary_condition
+            case (-1);     s_apply_boundary_condition => s_apply_periodic_boundary_condition
+            case (-15);    s_apply_boundary_condition => s_apply_slip_wall_boundary_condition
+            case (-16);    s_apply_boundary_condition => s_apply_no_slip_wall_boundary_condition
             case default ! Processor BC at beginning
                 call s_mpi_sendrecv_variables_buffers( &
                     q_prim_vf, pb, mv, patch_bc(i)%dir, patch_bc(i)%loc)
             end select
 
+            if (associated(s_apply_boundary_condition)) then
+                call s_apply_boundary_condition(q_prim_vf, &
+#ifdef MFC_SIMULATION
+                pb, mv, &
+#endif
+                patch_bc(i))
+            end if
+
 #ifdef MFC_SIMULATION
             if (qbmm .and. .not. polytropic) then
                 select case (patch_bc(i)%type)
-                case (-13:-3) ! Ghost-cell extrap. BC at beginning
-                    call s_qbmm_extrapolation(q_prim_vf, pb, mv, patch_bc(i))
-                case (-15)    ! Slip wall BC at beginning
-                    call s_qbmm_extrapolation(q_prim_vf, pb, mv, patch_bc(i))
-                case (-16)    ! No-slip wall BC at beginning
-                    call s_qbmm_extrapolation(q_prim_vf, pb, mv, patch_bc(i))
+                case (-13:-3, -15, -16) ! Ghost-cell extrap. BC at beginning
+                    call s_apply_qbmm_extrapolation_boundary_condition(q_prim_vf, pb, mv, patch_bc(i))
                 end select
             end if
 #endif

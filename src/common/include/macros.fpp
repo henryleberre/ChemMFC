@@ -311,7 +311,7 @@
 #:enddef
 
 #:def DEFINE_BOUNDARY_CONDITION_ROUTINE_STRUCT(impl, name)
-subroutine s_${name}$(q_prim_vf, &
+subroutine s_apply_${name}$_boundary_condition(q_prim_vf, &
 #ifdef MFC_SIMULATION
 pb, mv, &
 #endif
@@ -319,7 +319,7 @@ bc)
 
     $:impl
 
-end subroutine s_${name}$
+end subroutine s_apply_${name}$_boundary_condition
 #:enddef DEFINE_BOUNDARY_CONDITION_ROUTINE_STRUCT
 
 #:def DEFINE_BOUNDARY_CONDITION(impl, name)
