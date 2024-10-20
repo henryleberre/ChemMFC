@@ -159,7 +159,7 @@
 
 
 #:def _WRAP_i_LOOP(impl, loops = None)
-    !$acc parallel loop collapse(${3 + len(loops or [])}$) gang vector default(present) private(x, y, z, sx, sy, sz, px, py, pz, ex, ey, ez)
+    !$acc parallel loop collapse(${3 + len(loops or [])}$) gang vector default(present) private(x, y, z, sx, sy, sz, px, py, pz, ex, ey, ez, packed_idr, internal_pack_offset, nopack_idx, nopack_idy, nopack_idz, internal_unpack_offset)
     #:for index, lbound, hbound in (loops or [])
         do ${index}$ = ${lbound}$, ${hbound}$
     #:endfor
@@ -172,6 +172,20 @@
 #:enddef
 
 #:def IMPLEMENT_BOUNDARY_CONDITION(impl, loops = None)
+    internal_pack_offset = 0
+    block
+        integer, dimension(1:3) :: grid_dims
+        grid_dims = (/m, n, p/)
+        if (f_xor(bc%loc == 1, bc%type >= 0)) then
+            internal_pack_offset = grid_dims(bc%dir) - buff_size
+        end if
+
+        internal_unpack_offset = 0
+        if (bc%loc == 1) then
+            internal_unpack_offset = grid_dims(bc%dir) + buff_size + 1
+        end if
+    end block
+
     if (bc%dir == 1) then
 
         if (bc%loc == -1) then
@@ -184,6 +198,9 @@
                             sx = j - 1;       sy = k; sz = l ! Symmetry
                             px = m - (j - 1); py = k; pz = l ! Periodic
                             ex = 0;           ey = k; ez = l ! Extrapolation
+
+                            packed_idr = (i - 1) + v_size*((j - 1) + buff_size*(k + (n + 1)*l))
+                            nopack_idx = j + internal_pack_offset; nopack_idy = k; nopack_idz = l
 
                             $:impl
                         end do
@@ -202,6 +219,11 @@
                             sx = m - (j - 1); sy = k; sz = l ! Symmetry
                             px = j - 1;       py = k; pz = l ! Periodic
                             ex = m;           ey = k; ez = l ! Extrapolation
+
+                            packed_idr = (i - 1) + v_size*((j - 1) + buff_size*(k + (n + 1)*l))
+                            nopack_idx = j + internal_pack_offset; nopack_idy = k; nopack_idz = l
+
+                            ! packed_idr = (i - 1) + v_size*((j - 1) + buff_size*((k + 1) + (n + 1)*l))
 
                             $:impl
 
@@ -308,6 +330,9 @@
     integer :: sx, sy, sz
     integer :: px, py, pz
     integer :: ex, ey, ez
+    integer :: packed_idr
+    integer :: nopack_idx, nopack_idy, nopack_idz
+    integer :: internal_pack_offset, internal_unpack_offset
 #:enddef
 
 #:def DEFINE_BOUNDARY_CONDITION_ROUTINE_STRUCT(impl, name)
