@@ -730,7 +730,10 @@ contains
         call s_finalize_derived_variables_module()
         call s_finalize_data_input_module()
         call s_finalize_variables_conversion_module()
-        if (num_procs > 1) call s_finalize_mpi_proxy_module()
+        if (num_procs > 1) then
+            call s_finalize_mpi_proxy_module()
+            call s_finalize_mpi_common_module()
+        end if
         call s_finalize_global_parameters_module()
 
         ! Finalizing the MPI environment

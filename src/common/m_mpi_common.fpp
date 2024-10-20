@@ -146,6 +146,14 @@ contains
         
     end subroutine s_initialize_mpi_common_module
 
+    subroutine s_finalize_mpi_common_module()
+
+#if defined(MFC_MPI) && !defined(MFC_PRE_PROCESS)
+        @:DEALLOCATE_GLOBAL(q_cons_buff_send, q_cons_buff_recv)
+#endif
+
+    end subroutine s_finalize_mpi_common_module
+
     !! @param q_cons_vf Conservative variables
     !! @param ib_markers track if a cell is within the immersed boundary
     subroutine s_initialize_mpi_data(q_cons_vf, ib_markers)

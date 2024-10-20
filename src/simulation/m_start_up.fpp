@@ -1511,6 +1511,7 @@ contains
         call s_finalize_variables_conversion_module()
         if (grid_geometry == 3) call s_finalize_fftw_module
         call s_finalize_mpi_proxy_module()
+        call s_finalize_mpi_common_module()
         call s_finalize_global_parameters_module()
         if (relax) call s_finalize_relaxation_solver_module()
         if (any(Re_size > 0)) then

@@ -33,21 +33,14 @@ module m_mpi_proxy
     implicit none
 
 #ifdef CRAY_ACC_WAR
-    @:CRAY_DECLARE_GLOBAL(real(kind(0d0)), dimension(:), q_cons_buff_send)
-    @:CRAY_DECLARE_GLOBAL(real(kind(0d0)), dimension(:), q_cons_buff_recv)
     @:CRAY_DECLARE_GLOBAL(integer, dimension(:), ib_buff_send)
     @:CRAY_DECLARE_GLOBAL(integer, dimension(:), ib_buff_recv)
     @:CRAY_DECLARE_GLOBAL(real(kind(0d0)), dimension(:), c_divs_buff_send)
     @:CRAY_DECLARE_GLOBAL(real(kind(0d0)), dimension(:), c_divs_buff_recv)
-    !$acc declare link(q_cons_buff_recv, q_cons_buff_send)
+
     !$acc declare link(ib_buff_send, ib_buff_recv)
     !$acc declare link(c_divs_buff_send, c_divs_buff_recv)
 #else
-    real(kind(0d0)), private, allocatable, dimension(:), target :: q_cons_buff_send !<
-    !! This variable is utilized to pack and send the buffer of the cell-average
-    !! conservative variables, for a single computational domain boundary at the
-    !! time, to the relevant neighboring processor.
-
     real(kind(0d0)), private, allocatable, dimension(:), target :: q_cons_buff_recv !<
     !! q_cons_buff_recv is utilized to receive and unpack the buffer of the cell-
     !! average conservative variables, for a single computational domain boundary
@@ -73,7 +66,6 @@ module m_mpi_proxy
     !! immersed boundary markers, for a single computational domain boundary
     !! at the time, from the relevant neighboring processor.
 
-    !$acc declare create(q_cons_buff_send, q_cons_buff_recv)
     !$acc declare create( ib_buff_send, ib_buff_recv)
     !$acc declare create(c_divs_buff_send, c_divs_buff_recv)
 #endif
@@ -1861,8 +1853,6 @@ contains
 
 #ifdef MFC_MPI
 
-        ! Deallocating q_cons_buff_send and q_cons_buff_recv
-        @:DEALLOCATE_GLOBAL(q_cons_buff_send, q_cons_buff_recv)
         if (ib) then
             @:DEALLOCATE_GLOBAL(ib_buff_send, ib_buff_recv)
         end if
