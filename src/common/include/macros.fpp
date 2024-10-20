@@ -156,3 +156,192 @@
                          //${message or '"No error description."'}$)
     end if
 #:enddef
+
+
+#:def _WRAP_i_LOOP(impl, loops = None)
+    !$acc parallel loop collapse(${3 + len(loops or [])}$) gang vector default(present) private(x, y, z, sx, sy, sz, px, py, pz, ex, ey, ez)
+    #:for index, lbound, hbound in (loops or [])
+        do ${index}$ = ${lbound}$, ${hbound}$
+    #:endfor
+
+    $:impl
+
+    #:for i in range(len(loops or []))
+        end do
+    #:endfor
+#:enddef
+
+#:def IMPLEMENT_BOUNDARY_CONDITION(impl, loops = None)
+    if (bc%dir == 1) then
+
+        if (bc%loc == -1) then
+
+            #:block _WRAP_i_LOOP(loops = loops)
+                do l = 0, p
+                    do k = 0, n
+                        do j = 1, buff_size
+                             x = -j;           y = k;  z = l ! Regular
+                            sx = j - 1;       sy = k; sz = l ! Symmetry
+                            px = m - (j - 1); py = k; pz = l ! Periodic
+                            ex = 0;           ey = k; ez = l ! Extrapolation
+
+                            $:impl
+                        end do
+                    end do
+                end do
+            #:endblock
+
+        else
+
+            #:block _WRAP_i_LOOP(loops = loops)
+                do l = 0, p
+                    do k = 0, n
+                        do j = 1, buff_size
+
+                             x = m + j;        y = k;  z = l ! Regular
+                            sx = m - (j - 1); sy = k; sz = l ! Symmetry
+                            px = j - 1;       py = k; pz = l ! Periodic
+                            ex = m;           ey = k; ez = l ! Extrapolation
+
+                            $:impl
+
+                        end do
+                    end do
+                end do
+            #:endblock
+
+        end if
+
+        !< y-direction =========================================================
+    elseif (bc%dir == 2) then
+
+        if (bc%loc == -1) then
+
+            #:block _WRAP_i_LOOP(loops = loops)
+                do k = 0, p
+                    do j = 1, buff_size
+                        do l = -buff_size, m + buff_size
+                             x = l;  y = -j;           z = k ! Regular
+                            sx = l; sy = j - 1;       sz = k ! Symmetry
+                            px = l; py = n - (j - 1); pz = k ! Periodic
+                            ex = l; ey = 0;           ez = k ! Extrapolation
+
+                            $:impl
+                        end do
+                    end do
+                end do
+            #:endblock
+
+        else
+
+            #:block _WRAP_i_LOOP(loops = loops)
+                do k = 0, p
+                    do j = 1, buff_size
+                        do l = -buff_size, m + buff_size
+                             x = l; y  = n + j;        z = k ! Regular
+                            sx = l; sy = n - (j - 1); sz = k ! Symmetry
+                            px = l; py = j - 1;       pz = k ! Periodic
+                            ex = l; ey = n;           ez = k ! Extrapolation
+
+                            $:impl
+                        end do
+                    end do
+                end do
+            #:endblock
+
+        end if
+
+        !< z-direction =========================================================
+    elseif (bc%dir == 3) then
+
+        if (bc%loc == -1) then
+
+            #:block _WRAP_i_LOOP(loops = loops)
+                do j = 1, buff_size
+                    do l = -buff_size, n + buff_size
+                        do k = -buff_size, m + buff_size
+                             x = k;  y = l;  z = -j          ! Regular
+                            sx = k; sy = l; sz = j - 1       ! Symmetry
+                            px = k; py = l; pz = p - (j - 1) ! Periodic
+                            ex = k; ey = l; ez = 0           ! Extrapolation
+
+                            $:impl
+                        end do
+                    end do
+                end do
+            #:endblock
+
+        else
+
+            #:block _WRAP_i_LOOP(loops = loops)
+                do j = 1, buff_size
+                    do l = -buff_size, n + buff_size
+                        do k = -buff_size, m + buff_size
+                             x = k;  y = l;  z = p + j       ! Regular
+                            sx = k; sy = l; sz = p - (j - 1) ! Symmetry
+                            px = k; py = l; pz = j - 1       ! Periodic
+                            ex = k; ey = l; ez = p           ! Extrapolation
+
+                            $:impl
+                        end do
+                    end do
+                end do
+            #:endblock
+
+        end if
+
+    end if
+#:enddef IMPLEMENT_BOUNDARY_CONDITION
+
+#:def BOUNDARY_CONDITION_INTENT_DECLARATIONS()
+    type(scalar_field), dimension(sys_size), intent(inout) :: q_prim_vf
+#ifdef MFC_SIMULATION
+    real(kind(0d0)), dimension(startx:, starty:, startz:, 1:, 1:), intent(inout) :: pb, mv
+#endif
+    type(bc_patch_parameters), intent(in) :: bc
+#:enddef
+
+#:def BOUNDARY_CONDITION_INTEGER_DECLARATIONS()
+    integer :: i, j, k, l, q
+
+    integer ::  x,  y,  z
+    integer :: sx, sy, sz
+    integer :: px, py, pz
+    integer :: ex, ey, ez
+#:enddef
+
+#:def DEFINE_BOUNDARY_CONDITION_ROUTINE_STRUCT(impl, name)
+subroutine s_${name}$(q_prim_vf, &
+#ifdef MFC_SIMULATION
+pb, mv, &
+#endif
+bc)
+
+    $:impl
+
+end subroutine s_${name}$
+#:enddef DEFINE_BOUNDARY_CONDITION_ROUTINE_STRUCT
+
+#:def DEFINE_BOUNDARY_CONDITION(impl, name)
+#:block DEFINE_BOUNDARY_CONDITION_ROUTINE_STRUCT(name=name)
+
+    @:BOUNDARY_CONDITION_INTENT_DECLARATIONS()
+    @:BOUNDARY_CONDITION_INTEGER_DECLARATIONS()
+
+    $:impl
+
+#:endblock
+#:enddef DEFINE_BOUNDARY_CONDITION
+
+#:def DEFINE_BOUNDARY_CONDITION_INTERFACE(name)
+abstract interface
+    #:block DEFINE_BOUNDARY_CONDITION_ROUTINE_STRUCT(name=name)
+
+        import :: scalar_field, sys_size, startx, starty, startz, bc_patch_parameters
+
+        @:BOUNDARY_CONDITION_INTENT_DECLARATIONS()
+        @:BOUNDARY_CONDITION_INTEGER_DECLARATIONS()
+        
+    #:endblock
+end interface
+#:enddef DEFINE_BOUNDARY_CONDITION_INTERFACE

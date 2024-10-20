@@ -808,7 +808,7 @@ contains
         call nvtxEndRange
 
         call nvtxStartRange("RHS-MPI")
-        call s_populate_variables_buffers(q_prim_qp%vf, pb, mv)
+        call s_populate_prim_buffers(q_prim_qp%vf, pb, mv)
 
         call nvtxEndRange
 
