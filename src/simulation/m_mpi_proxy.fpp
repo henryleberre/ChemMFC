@@ -252,7 +252,7 @@ contains
             !! Remaining number of cells, in a particular coordinate direction,
             !! after the majority is divided up among the available processors
 
-        integer :: i, j !< Generic loop iterators
+        integer :: i, j, w !< Generic loop iterators
 
         if (num_procs == 1 .and. parallel_io) then
             do i = 1, num_dims
@@ -412,21 +412,23 @@ contains
                     end if
                 end do
 
-                ! Boundary condition at the beginning
-                if (proc_coords(3) > 0 .or. bc_z%beg == -1) then
-                    proc_coords(3) = proc_coords(3) - 1
-                    call MPI_CART_RANK(MPI_COMM_CART, proc_coords, &
-                                       bc_z%beg, ierr)
-                    proc_coords(3) = proc_coords(3) + 1
-                end if
-
-                ! Boundary condition at the end
-                if (proc_coords(3) < num_procs_z - 1 .or. bc_z%end == -1) then
-                    proc_coords(3) = proc_coords(3) + 1
-                    call MPI_CART_RANK(MPI_COMM_CART, proc_coords, &
-                                       bc_z%end, ierr)
-                    proc_coords(3) = proc_coords(3) - 1
-                end if
+                do w = 1, num_bc_patches
+                    if (patch_bc(w)%dir == 3 .and. patch_bc(w)%type == -1) then
+                        ! Boundary condition at the beginning
+                        if (patch_bc(w)%loc == -1 .and. proc_coords(3) > 0) then
+                            proc_coords(3) = proc_coords(3) - 1
+                            call MPI_CART_RANK(MPI_COMM_CART, proc_coords, patch_bc(w)%type, ierr)
+                            proc_coords(3) = proc_coords(3) + 1
+                        end if
+        
+                        ! Boundary condition at the end
+                        if (patch_bc(w)%loc == +1 .and. proc_coords(3) < num_procs_z - 1) then
+                            proc_coords(3) = proc_coords(3) + 1
+                            call MPI_CART_RANK(MPI_COMM_CART, proc_coords, patch_bc(w)%type, ierr)
+                            proc_coords(3) = proc_coords(3) - 1
+                        end if
+                    end if
+                end do
 
                 if (parallel_io) then
                     if (proc_coords(3) < rem_cells) then
@@ -516,21 +518,23 @@ contains
                 end if
             end do
 
-            ! Boundary condition at the beginning
-            if (proc_coords(2) > 0 .or. bc_y%beg == -1) then
-                proc_coords(2) = proc_coords(2) - 1
-                call MPI_CART_RANK(MPI_COMM_CART, proc_coords, &
-                                   bc_y%beg, ierr)
-                proc_coords(2) = proc_coords(2) + 1
-            end if
-
-            ! Boundary condition at the end
-            if (proc_coords(2) < num_procs_y - 1 .or. bc_y%end == -1) then
-                proc_coords(2) = proc_coords(2) + 1
-                call MPI_CART_RANK(MPI_COMM_CART, proc_coords, &
-                                   bc_y%end, ierr)
-                proc_coords(2) = proc_coords(2) - 1
-            end if
+            do w = 1, num_bc_patches
+                if (patch_bc(w)%dir == 2 .and. patch_bc(w)%type == -1) then
+                    ! Boundary condition at the beginning
+                    if (patch_bc(w)%loc == -1 .and. proc_coords(2) > 0) then
+                        proc_coords(2) = proc_coords(2) - 1
+                        call MPI_CART_RANK(MPI_COMM_CART, proc_coords, patch_bc(w)%type, ierr)
+                        proc_coords(2) = proc_coords(2) + 1
+                    end if
+    
+                    ! Boundary condition at the end
+                    if (patch_bc(w)%loc == +1 .and. proc_coords(2) < num_procs_y - 1) then
+                        proc_coords(2) = proc_coords(2) + 1
+                        call MPI_CART_RANK(MPI_COMM_CART, proc_coords, patch_bc(w)%type, ierr)
+                        proc_coords(2) = proc_coords(2) - 1
+                    end if
+                end if
+            end do
 
             if (parallel_io) then
                 if (proc_coords(2) < rem_cells) then
@@ -575,19 +579,23 @@ contains
             end if
         end do
 
-        ! Boundary condition at the beginning
-        if (proc_coords(1) > 0 .or. bc_x%beg == -1) then
-            proc_coords(1) = proc_coords(1) - 1
-            call MPI_CART_RANK(MPI_COMM_CART, proc_coords, bc_x%beg, ierr)
-            proc_coords(1) = proc_coords(1) + 1
-        end if
+        do w = 1, num_bc_patches
+            if (patch_bc(w)%dir == 1 .and. patch_bc(w)%type == -1) then
+                ! Boundary condition at the beginning
+                if (patch_bc(w)%loc == -1 .and. proc_coords(1) > 0) then
+                    proc_coords(1) = proc_coords(1) - 1
+                    call MPI_CART_RANK(MPI_COMM_CART, proc_coords, patch_bc(w)%type, ierr)
+                    proc_coords(1) = proc_coords(1) + 1
+                end if
 
-        ! Boundary condition at the end
-        if (proc_coords(1) < num_procs_x - 1 .or. bc_x%end == -1) then
-            proc_coords(1) = proc_coords(1) + 1
-            call MPI_CART_RANK(MPI_COMM_CART, proc_coords, bc_x%end, ierr)
-            proc_coords(1) = proc_coords(1) - 1
-        end if
+                ! Boundary condition at the end
+                if (patch_bc(w)%loc == +1 .and. proc_coords(1) < num_procs_x - 1) then
+                    proc_coords(1) = proc_coords(1) + 1
+                    call MPI_CART_RANK(MPI_COMM_CART, proc_coords, patch_bc(w)%type, ierr)
+                    proc_coords(1) = proc_coords(1) - 1
+                end if
+            end if
+        end do
 
         if (parallel_io) then
             if (proc_coords(1) < rem_cells) then
