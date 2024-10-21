@@ -50,15 +50,23 @@ module m_boundary_conditions_common
         patch_bc(1)%type = bc_x%beg; patch_bc(2)%type = bc_x%end
         patch_bc(1)%vel(1) = bc_x%vb1; patch_bc(1)%vel(2) = bc_x%vb2; patch_bc(1)%vel(3) = bc_x%vb3
         patch_bc(2)%vel(1) = bc_x%ve1; patch_bc(2)%vel(2) = bc_x%ve2; patch_bc(2)%vel(3) = bc_x%ve3
+        patch_bc(1)%indices = reshape([0, 0, 0, n, 0, p], [3, 2])
+        patch_bc(2)%indices = reshape([0, 0, 0, n, 0, p], [3, 2])
+
         if (n > 0) then
             patch_bc(3)%type = bc_y%beg; patch_bc(4)%type = bc_y%end
             patch_bc(3)%vel(1) = bc_y%vb1; patch_bc(3)%vel(2) = bc_y%vb2; patch_bc(3)%vel(3) = bc_y%vb3
             patch_bc(4)%vel(1) = bc_y%ve1; patch_bc(4)%vel(2) = bc_y%ve2; patch_bc(4)%vel(3) = bc_y%ve3
-    
+            patch_bc(3)%indices = reshape([0, m, 0, 0, 0, p], [3, 2])
+            patch_bc(4)%indices = reshape([0, m, 0, 0, 0, p], [3, 2])
+
             if (p > 0) then
                 patch_bc(5)%type   = bc_z%beg; patch_bc(6)%type   = bc_z%end
                 patch_bc(3)%vel(1) = bc_z%vb1; patch_bc(3)%vel(2) = bc_z%vb2; patch_bc(3)%vel(3) = bc_z%vb3
                 patch_bc(4)%vel(1) = bc_z%ve1; patch_bc(4)%vel(2) = bc_z%ve2; patch_bc(4)%vel(3) = bc_z%ve3
+                patch_bc(5)%indices = reshape([0, m, 0, n, 0, 0], [3, 2])
+                patch_bc(6)%indices = reshape([0, m, 0, n, 0, 0], [3, 2])
+
             end if
         end if
 

@@ -325,6 +325,7 @@ module m_derived_types
         integer :: dir !  [x,y,z]  => [1,2,3]
         integer :: loc ! [beg,end] => [-1,+1]
 
+        integer, dimension(1:3, 1:2) :: indices
     end type bc_patch_parameters
 
 end module m_derived_types
