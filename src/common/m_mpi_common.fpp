@@ -616,6 +616,15 @@ contains
                 q_cons_buff_send(pack_idr) = q_cons_vf(i)%sf(pack_idx, pack_idy, pack_idz)
             #:endblock
 
+#ifdef MFC_SIMULATION
+            if (qbmm .and. .not. polytropic) then
+                #:block IMPLEMENT_BOUNDARY_CONDITION(inner_loops=[("i", "sys_size + 1", "sys_size + 4"), ("q", 1, "nb")])
+                    q_cons_buff_send(pack_idr + (q - 1)*4)        = pb(pack_idx, pack_idy, pack_idz, i - sys_size, q)
+                    q_cons_buff_send(pack_idr + (q - 1)*4 + nb*4) = mv(pack_idx, pack_idy, pack_idz, i - sys_size, q)
+                #:endblock
+            end if
+#endif
+
             p_send => q_cons_buff_send(0)
             p_recv => q_cons_buff_recv(0)
             if (rdma_mpi) then
@@ -641,6 +650,15 @@ contains
             #:block IMPLEMENT_BOUNDARY_CONDITION(inner_loops=[("i", 1, "sys_size")])
                 q_cons_vf(i)%sf(unpack_idx, unpack_idy, unpack_idz) = q_cons_buff_recv(unpack_idr)
             #:endblock
+
+#ifdef MFC_SIMULATION
+            if (qbmm .and. .not. polytropic) then
+                #:block IMPLEMENT_BOUNDARY_CONDITION(inner_loops=[("i", "sys_size + 1", "sys_size + 4"), ("q", 1, "nb")])
+                    pb(unpack_idx, unpack_idy, unpack_idz, i - sys_size, q) = q_cons_buff_recv(unpack_idr + (q - 1)*4)
+                    mv(unpack_idx, unpack_idy, unpack_idz, i - sys_size, q) = q_cons_buff_recv(unpack_idr + (q - 1)*4 + nb*4)
+                #:endblock
+            end if
+#endif
         end do
 
 #endif
