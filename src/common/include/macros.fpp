@@ -234,6 +234,11 @@
                 px = l; py = n - (j - 1); pz = k ! Periodic
                 ex = l; ey = 0;           ez = k ! Extrapolation
 
+                  pack_idr = (i - 1) + v_size * ((l + buff_size) + (m + 2*buff_size + 1) * ((j - 1)          + buff_size*k))
+                unpack_idr = (i - 1) + v_size * ((l + buff_size) + (m + 2*buff_size + 1) * ((-j + buff_size) + buff_size*k))
+                  pack_idx = l;   pack_idy = (j - 1) + internal_pack_offset;   pack_idz = k
+                unpack_idx = l; unpack_idy = -j + internal_unpack_offset;    unpack_idz = k
+
                 $:impl
             #:endblock
 
@@ -244,6 +249,11 @@
                 sx = l; sy = n - (j - 1); sz = k ! Symmetry
                 px = l; py = j - 1;       pz = k ! Periodic
                 ex = l; ey = n;           ez = k ! Extrapolation
+
+                  pack_idr = (i - 1) + v_size * ((l + buff_size) + (m + 2*buff_size + 1) * ((j - 1)          + buff_size*k))
+                unpack_idr = (i - 1) + v_size * ((l + buff_size) + (m + 2*buff_size + 1) * ((-j + buff_size) + buff_size*k))
+                  pack_idx = l;   pack_idy = (j - 1) + internal_pack_offset;   pack_idz = k
+                unpack_idx = l; unpack_idy = -j + internal_unpack_offset;    unpack_idz = k
 
                 $:impl
             #:endblock
@@ -261,6 +271,11 @@
                 px = k; py = l; pz = p - (j - 1) ! Periodic
                 ex = k; ey = l; ez = 0           ! Extrapolation
 
+                  pack_idr = (i - 1) + v_size * ((k + buff_size) + (m + 2*buff_size + 1) * ((l + buff_size) + (n + 2*buff_size + 1)*(j - 1)))
+                unpack_idr = (i - 1) + v_size * ((k + buff_size) + (m + 2*buff_size + 1) * ((l + buff_size) + (n + 2*buff_size + 1)*(-j + buff_size)))
+                  pack_idx = k;   pack_idy = l;   pack_idz = (j - 1) + internal_pack_offset
+                unpack_idx = k; unpack_idy = l; unpack_idz = -j + internal_unpack_offset
+
                 $:impl
             #:endblock
 
@@ -271,6 +286,11 @@
                 sx = k; sy = l; sz = p - (j - 1) ! Symmetry
                 px = k; py = l; pz = j - 1       ! Periodic
                 ex = k; ey = l; ez = p           ! Extrapolation
+
+                  pack_idr = (i - 1) + v_size * ((k + buff_size) + (m + 2*buff_size + 1) * ((l + buff_size) + (n + 2*buff_size + 1)*(j - 1)))
+                unpack_idr = (i - 1) + v_size * ((k + buff_size) + (m + 2*buff_size + 1) * ((l + buff_size) + (n + 2*buff_size + 1)*(-j + buff_size)))
+                  pack_idx = k;   pack_idy = l;   pack_idz = (j - 1) + internal_pack_offset
+                unpack_idx = k; unpack_idy = l; unpack_idz = -j + internal_unpack_offset
 
                 $:impl
             #:endblock
