@@ -331,7 +331,7 @@ macro(HANDLE_SOURCES target useCommon)
 
         add_custom_command(
             OUTPUT   ${f90}
-            COMMAND  ${FYPP_EXE} -m re -m itertools
+            COMMAND  ${FYPP_EXE} -m re
                                  -I "${CMAKE_BINARY_DIR}/include/${target}"
                                  -I "${${target}_DIR}/include"
                                  -I "${common_DIR}/include"

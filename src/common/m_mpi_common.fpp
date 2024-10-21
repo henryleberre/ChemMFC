@@ -612,47 +612,36 @@ contains
             dst_proc = beg_end(1 + f_logical_to_int(f_xor(bc%loc == 1, bc%type >= 0)))
             src_proc = beg_end(1 + f_logical_to_int(bc%loc == 1))
 
-            #:block IMPLEMENT_BOUNDARY_CONDITION()
-                !$acc routine seq
-                do i = 1, sys_size
-                    q_cons_buff_send(packed_idr) = q_cons_vf(i)%sf(nopack_idx, nopack_idy, nopack_idz)
-                end do
+            #:block IMPLEMENT_BOUNDARY_CONDITION(inner_loops=[("i", 1, "sys_size")])
+                q_cons_buff_send(pack_idr) = q_cons_vf(i)%sf(pack_idx, pack_idy, pack_idz)
             #:endblock
 
-            ! Send/Recv
-            #:for rdma_mpi in [False, True]
-                if (rdma_mpi .eqv. ${'.true.' if rdma_mpi else '.false.'}$) then
-                    p_send => q_cons_buff_send(0)
-                    p_recv => q_cons_buff_recv(0)
-                    #:if rdma_mpi
-                        !$acc data attach(p_send, p_recv)
-                        !$acc host_data use_device(p_send, p_recv)
-                    #:else
-                        !$acc update host(q_cons_buff_send, ib_buff_send)
-                    #:endif
+            p_send => q_cons_buff_send(0)
+            p_recv => q_cons_buff_recv(0)
+            if (rdma_mpi) then
+                !$acc data attach(p_send, p_recv)
+                !$acc host_data use_device(p_send, p_recv)
+            else
+                !$acc update host(q_cons_buff_send, ib_buff_send)
+            end if
 
-                    call MPI_SENDRECV( &
-                        p_send, buffer_count, MPI_DOUBLE_PRECISION, dst_proc, send_tag, &
-                        p_recv, buffer_count, MPI_DOUBLE_PRECISION, src_proc, recv_tag, &
-                        MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+            call MPI_SENDRECV( &
+                p_send, buffer_count, MPI_DOUBLE_PRECISION, dst_proc, send_tag, &
+                p_recv, buffer_count, MPI_DOUBLE_PRECISION, src_proc, recv_tag, &
+                MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
 
-                    #:if rdma_mpi
-                        !$acc end host_data
-                        !$acc end data
-                        !$acc wait
-                    #:else
-                        !$acc update device(q_cons_buff_recv)
-                    #:endif
-                end if
-            #:endfor
+            if (rdma_mpi) then
+                !$acc end host_data
+                !$acc end data
+                !$acc wait
+            else
+                !$acc update device(q_cons_buff_recv)
+            end if
+
+            #:block IMPLEMENT_BOUNDARY_CONDITION(inner_loops=[("i", 1, "sys_size")])
+                q_cons_vf(i)%sf(unpack_idx, unpack_idy, unpack_idz) = q_cons_buff_recv(unpack_idr)
+            #:endblock
         end do
-
-        #:block IMPLEMENT_BOUNDARY_CONDITION()
-            !$acc routine seq
-            do i = 1, sys_size
-                q_cons_vf(i)%sf(j + unpack_offset, k, l) = q_cons_buff_recv(r)
-            end do
-        #:endblock
 
 #endif
 

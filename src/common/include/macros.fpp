@@ -159,7 +159,7 @@
 
 
 #:def _WRAP_i_LOOP(impl, loops)
-    !$acc parallel loop collapse(${len(loops)}$) gang vector default(present) private(x, y, z, sx, sy, sz, px, py, pz, ex, ey, ez, packed_idr, internal_pack_offset, nopack_idx, nopack_idy, nopack_idz, internal_unpack_offset)
+    !$acc parallel loop collapse(${len(loops)}$) gang vector default(present) private(x, y, z, sx, sy, sz, px, py, pz, ex, ey, ez, pack_idr, internal_pack_offset, pack_idx, pack_idy, pack_idz, internal_unpack_offset)
     #:for index, lbound, hbound in (loops or [])
         do ${index}$ = ${lbound}$, ${hbound}$
     #:endfor
@@ -172,12 +172,13 @@
 #:enddef
 
 #:def IMPLEMENT_BOUNDARY_CONDITION(impl, outer_loops = None, inner_loops = None)
-    internal_pack_offset = 0
     block
         integer, dimension(1:3) :: grid_dims
         grid_dims = (/m, n, p/)
+
+        internal_pack_offset = 0
         if (f_xor(bc%loc == 1, bc%type >= 0)) then
-            internal_pack_offset = grid_dims(bc%dir) - buff_size
+            internal_pack_offset = grid_dims(bc%dir) - buff_size + 1
         end if
 
         internal_unpack_offset = 0
@@ -196,8 +197,10 @@
                 px = m - (j - 1); py = k; pz = l ! Periodic
                 ex = 0;           ey = k; ez = l ! Extrapolation
 
-                packed_idr = (i - 1) + v_size*((j - 1) + buff_size*(k + (n + 1)*l))
-                nopack_idx = j + internal_pack_offset; nopack_idy = k; nopack_idz = l
+                  pack_idr = (i - 1) + v_size * ((j - 1) + buff_size*( k +      (n + 1)*l))
+                unpack_idr = (i - 1) + v_size * (-j      + buff_size*((k + 1) + (n + 1)*l))
+                  pack_idx =  j - 1 +   internal_pack_offset;   pack_idy = k;   pack_idz = l
+                unpack_idx = -j     + internal_unpack_offset; unpack_idy = k; unpack_idz = l
 
                 $:impl
             #:endblock
@@ -210,10 +213,10 @@
                 px = j - 1;       py = k; pz = l ! Periodic
                 ex = m;           ey = k; ez = l ! Extrapolation
 
-                packed_idr = (i - 1) + v_size*((j - 1) + buff_size*(k + (n + 1)*l))
-                nopack_idx = j + internal_pack_offset; nopack_idy = k; nopack_idz = l
-
-                ! packed_idr = (i - 1) + v_size*((j - 1) + buff_size*((k + 1) + (n + 1)*l))
+                  pack_idr = (i - 1) + v_size * ((j - 1) + buff_size*( k +      (n + 1)*l))
+                unpack_idr = (i - 1) + v_size * (-j      + buff_size*((k + 1) + (n + 1)*l))
+                  pack_idx =  j - 1 +   internal_pack_offset;   pack_idy = k;   pack_idz = l
+                unpack_idx = -j     + internal_unpack_offset; unpack_idy = k; unpack_idz = l
 
                 $:impl
             #:endblock
@@ -292,8 +295,9 @@
     integer :: sx, sy, sz
     integer :: px, py, pz
     integer :: ex, ey, ez
-    integer :: packed_idr
-    integer :: nopack_idx, nopack_idy, nopack_idz
+    integer :: pack_idr, unpack_idr
+    integer :: pack_idx, pack_idy, pack_idz
+    integer :: unpack_idx, unpack_idy, unpack_idz
     integer :: internal_pack_offset, internal_unpack_offset
 #:enddef
 
